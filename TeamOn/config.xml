@@ -1,0 +1,5 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<root>
+	<setting name="serverIP" value="127.0.0.1"/>
+	<setting name="port" value="9002"/>	
+</root>
