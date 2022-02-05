@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Xml.Linq;
 using TeamOn.Controls;
-using Button = TeamOn.Controls.Button;
 
 namespace TeamOn
 {
@@ -23,14 +22,15 @@ namespace TeamOn
             ctx.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
             ctx.PictureBox = pictureBox1;
             Elements.Add(new CloseButton(this) { Rect = new Rectangle(Width - headerHeight - 1, 0, headerHeight, headerHeight - 1) });
-            Elements.Add(new MinimizeButton(this) { Rect = new Rectangle(Width - headerHeight*2 - 1, 0, headerHeight, headerHeight - 1) });
+            Elements.Add(new MinimizeButton(this) { Rect = new Rectangle(Width - headerHeight * 2 - 1, 0, headerHeight, headerHeight - 1) });
+            Elements.Add(new SettingsButton(this) { Rect = new Rectangle(headerHeight, 0, headerHeight, headerHeight - 1) });
 
-            TopMost = true;
+            //TopMost = true;
 
             notifyIcon1.BalloonTipIcon = ToolTipIcon.Info;
             notifyIcon1.ContextMenuStrip = contextMenuStrip1;
             notifyIcon1.Icon = TeamOn.Properties.Resources.smiley_mr_green;
-            Icon= TeamOn.Properties.Resources.smiley_mr_green; ;
+            Icon = TeamOn.Properties.Resources.smiley_mr_green; ;
 
             root = new RootElement();
             root.Rect = new Rectangle(0, headerHeight, Width, Height - headerHeight);
@@ -38,21 +38,27 @@ namespace TeamOn
             mainPanel = new TwoColumnPanel() { Rect = new Rectangle(0, headerHeight, Width, Height - headerHeight), Parent = root };
             mainPanel.FirstPanelWidth = 200;
             mainPanel.FirstPanelFixed = true;
+
+            TeamScreen.TeamScreenServer.StartServer();
+
             clc = new ChatsListControl() { Parent = mainPanel };
+
             clc.Chats.Add(new ChatItem() { Name = "chat1" });
-            clc.Chats.Add(new ChatItem() { Name = "group1" });
-            clc.Chats.Add(new ChatItem() { Name = "group2" });
+            clc.Chats.Add(new ChatItem() { Name = "group1" ,IsGroup=true});
+            clc.Chats.Add(new ChatItem() { Name = "group2" ,IsGroup=true});
+
             ChatMessageAreaControl.CurrentChat = clc.Chats.First();
             var chat1 = clc.Chats.First();
-            UserInfo currentUser = new UserInfo() { Name = Environment.UserName };
-            chat1.Messages.Add(new TextChatMessage() { Text = "Hello!  123 :)" , Owner = currentUser });
-            chat1.Messages.Add(new TextChatMessage() { Text = "Hi" ,Owner=currentUser });
-            chat1.Messages.Add(new TextChatMessage() { Text = "how are you?" ,Owner=new UserInfo() { Name="user2"} });
+            ChatMessageAreaControl.CurrentUser= new UserInfo() { Name = Environment.UserName };
+            chat1.Messages.Add(new TextChatMessage() { Text = "Hello!  123 :)", Owner = ChatMessageAreaControl.CurrentUser});
+            chat1.Messages.Add(new TextChatMessage() { Text = "Hi", Owner = ChatMessageAreaControl.CurrentUser });
+            chat1.Messages.Add(new TextChatMessage() { Text = "how are you?", Owner = new UserInfo() { Name = "user2" } });
 
 
             mainPanel.Elements.Add(clc);
-            mainPanel.Elements.Add(new ChatControl() { Parent = mainPanel });
-
+            chatControl = new ChatControl() { Parent = mainPanel };
+            mainPanel.Elements.Add(chatControl);
+            settings=  new SettingsControl() { Parent=mainPanel};
             pictureBox1.MouseDoubleClick += PictureBox1_MouseDoubleClick;
 
             Elements.Add(mainPanel);
@@ -69,6 +75,30 @@ namespace TeamOn
             loadConfig();
             connectStart();
 
+        }
+        ChatControl chatControl;
+        SettingsControl settings;
+        public void SwitchLayoutSettings()
+        {
+            if (mainPanel.Elements[1]==chatControl)
+            {
+                mainPanel.Elements[1] =settings;
+            }
+            else
+            {
+                mainPanel.Elements[1] = chatControl;
+            }
+        }
+
+        protected override void OnKeyDown(KeyEventArgs e)
+        {
+            var ev = new UIKeyDown() { Key = e };
+            foreach (var item in Elements)
+            {
+                if (ev.Handled) break;
+                item.Event(ev);
+            }
+            base.OnKeyDown(e);
         }
 
         private void Form1_SizeChanged(object sender, EventArgs e)
@@ -190,9 +220,10 @@ namespace TeamOn
             };
             client.OnMsgRecieved = (user, str) =>
             {
-                /*     Invoke((Action)(() =>
+                     Invoke((Action)(() =>
                      {
-                         listView1.Items.Add(new ListViewItem(new string[]
+                         ChatMessageAreaControl.CurrentChat.Messages.Add(new TextChatMessage() { Text = str, Owner = ChatClient.Instance.Users.First(z => z.Name == user) });
+                      /*   listView1.Items.Add(new ListViewItem(new string[]
                      {
                          DateTime.Now.ToLongTimeString() ,
                          user+"",
@@ -205,8 +236,8 @@ namespace TeamOn
                          richTextBox2.Invoke((Action)(() =>
                          {
                              richTextBox2.Text = str;
-                         }));
-                     }));*/
+                         }));*/
+                     }));
 
             };
             client.Connect(ipAddr, port);
@@ -216,7 +247,7 @@ namespace TeamOn
         ChatsListControl clc;
         private void Form1_Resize(object sender, EventArgs e)
         {
-       
+
             if (FormWindowState.Minimized == this.WindowState)
             {
                 ShowInTaskbar = false;
@@ -228,21 +259,21 @@ namespace TeamOn
             }
             else if (FormWindowState.Normal == this.WindowState)
             {
-                
+
                 captionCaptured = false;
                 //Show();
                 UIResize();
                 Refresh();
-                
+
                 //notifyIcon1.Visible = false;
             }
         }
 
         private void Form1_ResizeEnd(object sender, EventArgs e)
         {
-            
+
             UIResize();
-                
+
         }
 
         int normalWidth;
@@ -252,7 +283,7 @@ namespace TeamOn
         private void PictureBox1_MouseDoubleClick(object sender, MouseEventArgs e)
         {
             var pos = ctx.GetCursor();
-            //if (pos.Y < headerHeight)
+            if (pos.Y < headerHeight)
             {
                 if (Math.Abs(Width - Screen.PrimaryScreen.Bounds.Width) < 1)
                 {
@@ -453,19 +484,19 @@ namespace TeamOn
             {
                 if ((resizeCaptured && (resizeDirection == ResizeDirectionEnum.Left || resizeDirection == ResizeDirectionEnum.Right)) || (pos2.X < 10 || (pos2.X < Width && pos2.X > (Width - 10))))
                 {
-                    ctx.SetTempCursor(Cursors.SizeWE);
+                    ctx.SetTempCursor(Cursors.SizeWE,2);
                 }
                 if ((pos2.Y < 5 || (pos2.Y < Height && pos2.Y > (Height - 5))))
                 {
-                    ctx.SetTempCursor(Cursors.SizeNS);
+                    ctx.SetTempCursor(Cursors.SizeNS,2);
                 }
                 if (((pos2.X < Width && pos2.X > (Width - 10)) && (pos2.Y < Height && pos2.Y > (Height - 5))))
                 {
-                    ctx.SetTempCursor(Cursors.SizeNWSE);
+                    ctx.SetTempCursor(Cursors.SizeNWSE,2);
                 }
             }
 
-            if ( WindowState==FormWindowState.Normal && captionCaptured && !resizeCaptured)
+            if (WindowState == FormWindowState.Normal && captionCaptured && !resizeCaptured)
             {
                 Left = startWindowPositionX - (captureCursorX - pos.X);
                 Top = startWindowPositionY - (captureCursorY - pos.Y);
@@ -475,7 +506,7 @@ namespace TeamOn
 
             gr.FillRectangle((captionCaptured || (pos2.Y > 0 && pos2.Y < headerHeight)) ? Brushes.DarkGreen : Brushes.Navy, 0, 0, Width, headerHeight);
 
-            gr.FillEllipse(client.Connected ? Brushes.Green : Brushes.Yellow, 1, 1, 15, 15);
+            gr.FillEllipse(client.Connected ? Brushes.LawnGreen : Brushes.Yellow, 1, 1, 15, 15);
             gr.DrawEllipse(Pens.Black, 1, 1, 15, 15);
             var ms = gr.MeasureString("Team Online", SystemFonts.DefaultFont);
             gr.DrawString("Team Online", SystemFonts.DefaultFont, Brushes.Azure, Width / 2 - ms.Width / 2, 3);
@@ -503,7 +534,7 @@ namespace TeamOn
         private void UIResize()
         {
             Elements[0].Rect = new Rectangle(Width - headerHeight - 1, 0, headerHeight, headerHeight - 1);
-            Elements[1].Rect = new Rectangle(Width - headerHeight*2 - 1, 0, headerHeight, headerHeight - 1);
+            Elements[1].Rect = new Rectangle(Width - headerHeight * 2 - 1, 0, headerHeight, headerHeight - 1);
             mainPanel.Rect = new Rectangle(0, headerHeight, Width, Height - headerHeight);
             root.Rect = mainPanel.Rect;
 
@@ -512,7 +543,7 @@ namespace TeamOn
         private void notifyIcon1_MouseDoubleClick(object sender, MouseEventArgs e)
         {
             ShowInTaskbar = true;
-            
+
             //notifyIcon1.Visible = false;
             WindowState = FormWindowState.Normal;
             //Show();
@@ -524,146 +555,12 @@ namespace TeamOn
         }
     }
 
-    public class UITextBox : UIElement
-    {
-        public override void Draw(DrawingContext ctx)
-        {
-
-        }
-
-        public override void Event(UIEvent ev)
-        {
-
-        }
-    }
-    public class ChatTextBoxControl : UITextBox
-    {
-        public override void Draw(DrawingContext ctx)
-        {
-            if (!Visible) return;
-            var bound = Parent.GetRectangleOfChild(this).Value;
-            ctx.Graphics.FillRectangle(Brushes.White, bound.X, bound.Y, bound.Width, bound.Height);
-            var pos = ctx.GetCursor();
-            if (new Rectangle(bound.X, bound.Bottom - 50, bound.Width, 50).Contains(pos))
-            {
-                ctx.SetTempCursor(Cursors.IBeam);
-            }
-            ctx.Graphics.DrawString("Напишите сообщение", SystemFonts.DefaultFont, Brushes.Gray, bound.X + 10, bound.Y + 5);
-        }
-    }
-
-    public class ChatsListControl : UIElement
-    {
-        public List<ChatItem> Chats = new List<ChatItem>();
-        public override void Draw(DrawingContext ctx)
-        {
-            var bound = Parent.GetRectangleOfChild(this).Value;
-            ctx.Graphics.FillRectangle(Brushes.Khaki, bound);
-            int yy = bound.Y;
-            int chatHeight = 30;
-            foreach (var item in Chats)
-            {
-                ctx.Graphics.FillRectangle(Brushes.White, bound.X, yy, bound.Width, chatHeight);
-                ctx.Graphics.DrawRectangle(new Pen(Color.LightBlue, 1), bound.X, yy, bound.Width, chatHeight);
-                ctx.Graphics.DrawString(item.Name, SystemFonts.DefaultFont, Brushes.Blue, 5, yy + 6);
-
-                yy += chatHeight;
-            }
-        }
-
-        public override void Event(UIEvent ev)
-        {
-
-        }
-    }
-
-    public class DrawingContext
-    {
-        public Graphics Graphics;
-        public PictureBox PictureBox;
-        public Point GetCursor()
-        {
-            return PictureBox.PointToClient(Cursor.Position);
-        }
-        Cursor tempCursor;
-        internal void SetTempCursor(Cursor beam)
-        {
-            tempCursor = beam;
-        }
-        public void ApplyCursor()
-        {
-            PictureBox.Parent.Cursor = tempCursor;
-
-        }
-
-    }
-
-    public class CloseButton : Button
-    {
-        public CloseButton(Form owner)
-        {
-            Click = (x) =>
-            {
-                if (MessageBox.Show("Close?", owner.Text, MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
-                {
-                    owner.Close();
-                }
-            };
-        }
-
-        public override void Draw(DrawingContext ctx)
-        {
-            var cursor = ctx.GetCursor();
-            int gap = 3;
-            if (Rect.Contains(cursor))
-            {
-                ctx.Graphics.FillRectangle(Brushes.AliceBlue, Rect);
-
-                ctx.Graphics.DrawLine(new Pen(Color.Red, 3), Rect.X + gap, Rect.Y + gap, Rect.Right - gap, Rect.Bottom - gap);
-                ctx.Graphics.DrawLine(new Pen(Color.Red, 3), Rect.X + gap, Rect.Bottom - gap, Rect.Right - gap, Rect.Top + gap);
-            }
-            else
-            {
-                ctx.Graphics.DrawLine(new Pen(Color.LightGray, 3), Rect.X + gap, Rect.Y + gap, Rect.Right - gap, Rect.Bottom - gap);
-                ctx.Graphics.DrawLine(new Pen(Color.LightGray, 3), Rect.X + gap, Rect.Bottom - gap, Rect.Right - gap, Rect.Top + gap);
-            }
-            ctx.Graphics.DrawRectangle(Pens.Black, Rect);
-
-
-        }
-    }
-    public class MinimizeButton : Button
-    {
-        public MinimizeButton(Form owner)
-        {
-            Click = (x) =>
-            {
-
-                owner.WindowState = FormWindowState.Minimized;
-
-            };
-        }
-
-        public override void Draw(DrawingContext ctx)
-        {
-            var cursor = ctx.GetCursor();
-            int gap = 3;
-            if (Rect.Contains(cursor))
-            {
-                ctx.Graphics.FillRectangle(Brushes.AliceBlue, Rect);
-                ctx.Graphics.DrawLine(new Pen(Color.Red, 3), Rect.X + gap, Rect.Bottom - gap, Rect.Right - gap, Rect.Bottom - gap);
-            }
-            else
-            {
-                ctx.Graphics.DrawLine(new Pen(Color.LightGray, 3), Rect.X + gap, Rect.Bottom - gap, Rect.Right - gap, Rect.Bottom - gap);
-            }
-            ctx.Graphics.DrawRectangle(Pens.Black, Rect);
-        }
-    }
-
     public class ChatItem
     {
         public string Name;
+        public List<UserInfo> Users = new List<UserInfo>();
+        public bool IsGroup;
+        public UserInfo Owner;
         public List<ChatMessage> Messages = new List<ChatMessage>();
 
     }
@@ -681,10 +578,24 @@ namespace TeamOn
         public Bitmap Thumbnail;
         public string Path;
     }
- 
+
     public class UserInfo
     {
         public string Name;
     }
-   
+
+
+    public class RemoteControlVisualizer : UIElement
+    {
+        public override void Draw(DrawingContext ctx)
+        {
+            
+        }
+
+        public override void Event(UIEvent ev)
+        {
+            
+        }
+    }
+
 }

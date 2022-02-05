@@ -12,6 +12,11 @@ namespace TeamOn
 {
     public class ChatClient
     {
+        public ChatClient()
+        {
+            Instance = this;
+        }
+        public static ChatClient Instance;
         private NetworkStream clientStream;
 
         public string Nickname = Environment.UserName;

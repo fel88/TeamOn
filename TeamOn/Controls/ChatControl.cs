@@ -11,16 +11,11 @@ namespace TeamOn.Controls
             Styles.Add(new RowColumnPanelStyle() { Type = SizeType.Percent, Size = 100 });
             Styles.Add(new RowColumnPanelStyle() { Type = SizeType.Absolute, Size = 40 });
             Styles.Add(new RowColumnPanelStyle() { Type = SizeType.Absolute, Size = 3 });
-            Elements.Add(new Panel() { Parent = this });
+            Elements.Add(new ChatHeaderControl() { Parent = this });
             Elements.Add(new ChatMessageAreaControl() { Parent = this, Visible = true });
             Elements.Add(new ChatTextBoxControl() { Parent = this, Visible = true });
             Elements.Add(new Panel() { Parent = this, BackColor = Color.LightBlue });
 
-        }
-
-        public override void Event(UIEvent ev)
-        {
-
-        }
+        }        
     }
 }

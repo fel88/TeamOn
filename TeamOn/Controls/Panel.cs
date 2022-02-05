@@ -31,11 +31,9 @@ namespace TeamOn.Controls
         {
             foreach (var item in Elements)
             {
+                if (ev.Handled) break;
                 item.Event(ev);
             }
         }
-
-
-
     }
 }

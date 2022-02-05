@@ -8,14 +8,21 @@ namespace TeamOn.Controls
     {
         public override void Draw(DrawingContext ctx)
         {
+            var bound = Parent.GetRectangleOfChild(this).Value;
             var cursor = ctx.GetCursor();
-            if (Rect.Contains(cursor))
+            if (bound.Contains(cursor))
             {
-                ctx.Graphics.FillRectangle(Brushes.AliceBlue, Rect);
+                ctx.Graphics.FillRectangle(HoveredBrush, bound);
             }
-            ctx.Graphics.DrawRectangle(Pens.Black, Rect);
+            ctx.Graphics.DrawRectangle(Pens.Black, bound);
+            if(!string.IsNullOrEmpty(Text))
+            {
+                ctx.Graphics.DrawString(Text, SystemFonts.DefaultFont, Brushes.White, bound.X, bound.Y);
+            }
 
         }
+        public Brush HoveredBrush = Brushes.AliceBlue;
+        public string Text;
         public Action<Button> Click;
         public override void Event(UIEvent ev)
         {

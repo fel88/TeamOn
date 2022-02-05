@@ -11,6 +11,7 @@ namespace TeamOn.Controls
         private Bitmap _back;
 
         public static ChatItem CurrentChat;
+        public static UserInfo CurrentUser;
         public ChatMessageAreaControl()
         {
             var assembly = Assembly.GetExecutingAssembly();
@@ -49,43 +50,43 @@ namespace TeamOn.Controls
 
             int gap = 5;
             int leftGap = 50;
-            int currentY = bound.Bottom - gap*2;
+            int currentY = bound.Bottom - gap * 2;
             for (int i = CurrentChat.Messages.Count - 1; i >= 0; i--)
             {
                 var msg = CurrentChat.Messages[i];
-                
-                if(msg is TextChatMessage tcm)
+
+                if (msg is TextChatMessage tcm)
                 {
                     var ms = ctx.Graphics.MeasureString(tcm.Text, SystemFonts.DefaultFont);
-                    if (ms.Width > bound.Width/2)
+                    if (ms.Width > bound.Width / 2)
                     {
-                        ms= ctx.Graphics.MeasureString(tcm.Text, SystemFonts.DefaultFont,bound.Width/2);
+                        ms = ctx.Graphics.MeasureString(tcm.Text, SystemFonts.DefaultFont, bound.Width / 2);
                     }
 
-                    if (msg.Owner.Name == Environment.UserName)
+                    if (msg.Owner == CurrentUser)
                     {
                         var rect = new RectangleF(bound.X + leftGap, currentY - ms.Height, ms.Width, ms.Height);
                         var rect2 = new RectangleF(rect.X, rect.Y, rect.Width, rect.Height);
                         rect2.Inflate(5, 5);
                         ctx.Graphics.FillRectangle(Brushes.White, rect2);
                         ctx.Graphics.DrawString(tcm.Text, SystemFonts.DefaultFont, Brushes.Black, rect);
-                        ctx.Graphics.DrawString(tcm.Owner.Name, SystemFonts.DefaultFont, Brushes.Black, bound.X+2,currentY-ms.Height);
+                        ctx.Graphics.DrawString(tcm.Owner.Name, SystemFonts.DefaultFont, Brushes.Black, bound.X + 2, currentY - ms.Height);
 
                         currentY -= gap * 3 + (int)ms.Height;
                     }
                     else
                     {
-                        var rect = new RectangleF(bound.Right-ms.Width - leftGap, currentY - ms.Height, ms.Width, ms.Height);
+                        var rect = new RectangleF(bound.Right - ms.Width - leftGap, currentY - ms.Height, ms.Width, ms.Height);
                         var rect2 = new RectangleF(rect.X, rect.Y, rect.Width, rect.Height);
                         rect2.Inflate(5, 5);
                         ctx.Graphics.FillRectangle(Brushes.White, rect2);
                         ctx.Graphics.DrawString(tcm.Text, SystemFonts.DefaultFont, Brushes.Black, rect);
-                        ctx.Graphics.DrawString(tcm.Owner.Name, SystemFonts.DefaultFont, Brushes.Black, bound.Right-leftGap, currentY - ms.Height);
+                        ctx.Graphics.DrawString(tcm.Owner.Name, SystemFonts.DefaultFont, Brushes.Black, bound.Right - leftGap, currentY - ms.Height);
 
                         currentY -= gap * 3 + (int)ms.Height;
                     }
-                    
-                   
+
+
                 }
             }
 

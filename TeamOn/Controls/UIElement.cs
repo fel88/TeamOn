@@ -11,5 +11,17 @@ namespace TeamOn.Controls
         public abstract void Draw(DrawingContext ctx);
 
         public abstract void Event(UIEvent ev);
+
+        
+        public UIElement FindParent<T>() 
+        {
+            var parent = Parent;
+            while (parent != null)
+            {
+                if (parent is T) return parent;
+                parent = parent.Parent;
+            }
+            return null;
+        }
     }
 }
