@@ -1,10 +1,11 @@
 ﻿using System.Drawing;
 using System.Windows.Forms;
-using Button = TeamOn.Controls.Button;
+using TeamOn.Controls;
 
 namespace TeamOn
 {
-    public class MinimizeButton : Button
+    public class MinimizeButton : UIButton
+
     {
         public MinimizeButton(Form owner)
         {

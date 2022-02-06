@@ -1,10 +1,10 @@
 ﻿using System.Drawing;
 using System.Windows.Forms;
-using Button = TeamOn.Controls.Button;
+using TeamOn.Controls;
 
 namespace TeamOn
 {
-    public class SettingsButton : Button
+    public class SettingsButton : UIButton
     {
         public SettingsButton(Form1 owner)
         {

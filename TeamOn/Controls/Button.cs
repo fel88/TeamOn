@@ -4,7 +4,7 @@ using System.Windows.Forms;
 
 namespace TeamOn.Controls
 {
-    public class Button : UIElement
+    public class UIButton : UIElement
     {
         public override void Draw(DrawingContext ctx)
         {
@@ -23,7 +23,7 @@ namespace TeamOn.Controls
         }
         public Brush HoveredBrush = Brushes.AliceBlue;
         public string Text;
-        public Action<Button> Click;
+        public Action<UIButton> Click;
         public override void Event(UIEvent ev)
         {
             if (ev.Handled) return;

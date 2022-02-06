@@ -7,7 +7,7 @@ namespace TeamOn
 {
     public class ChatsListControl : UIElement
     {
-        public List<ChatItem> Chats = new List<ChatItem>();
+        public static List<ChatItem> Chats = new List<ChatItem>();
         public override void Draw(DrawingContext ctx)
         {
             var bound = Parent.GetRectangleOfChild(this).Value;
@@ -29,6 +29,10 @@ namespace TeamOn
                 }
                 ctx.Graphics.DrawRectangle(new Pen(Color.LightBlue, 1), bound.X, yy, bound.Width, chatHeight);
                 ctx.Graphics.DrawString(item.Name, SystemFonts.DefaultFont, Brushes.Blue, 5, yy + 6);
+                if (item.NewMessagesCounter > 0)
+                {
+                    ctx.Graphics.FillEllipse(Brushes.Green, bound.Right - 20, yy + 3, 15, 15);
+                }
 
                 yy += chatHeight;
             }
@@ -36,27 +40,28 @@ namespace TeamOn
 
         public override void Event(UIEvent ev)
         {
-            if(ev is UIMouseButtonDown mb)
+            if (ev is UIMouseButtonDown mb)
             {
                 var bound = Parent.GetRectangleOfChild(this).Value;
-                
+
                 int yy = bound.Y;
                 int chatHeight = 30;
-                
+
                 foreach (var item in Chats)
-                {   
+                {
                     var rect = new Rectangle(bound.X, yy, bound.Width, chatHeight);
                     if (rect.Contains(mb.Position))
                     {
                         ChatMessageAreaControl.CurrentChat = item;
+                        item.NewMessagesCounter = 0;
                         break;
                     }
                     yy += chatHeight;
                 }
 
-                
+
             }
         }
     }
-   
+
 }

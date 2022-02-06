@@ -8,6 +8,11 @@ namespace TeamOn.Controls
         public bool Visible = true;
         public Panel Parent;
         public Rectangle Rect;
+
+        public Rectangle GetBound()
+        {
+            return Parent.GetRectangleOfChild(this).Value;
+        }
         public abstract void Draw(DrawingContext ctx);
 
         public abstract void Event(UIEvent ev);

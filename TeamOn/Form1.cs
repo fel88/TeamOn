@@ -30,7 +30,7 @@ namespace TeamOn
             notifyIcon1.BalloonTipIcon = ToolTipIcon.Info;
             notifyIcon1.ContextMenuStrip = contextMenuStrip1;
             notifyIcon1.Icon = TeamOn.Properties.Resources.smiley_mr_green;
-            Icon = TeamOn.Properties.Resources.smiley_mr_green; ;
+            Icon = TeamOn.Properties.Resources.smiley_mr_green;
 
             root = new RootElement();
             root.Rect = new Rectangle(0, headerHeight, Width, Height - headerHeight);
@@ -43,22 +43,20 @@ namespace TeamOn
 
             clc = new ChatsListControl() { Parent = mainPanel };
 
-            clc.Chats.Add(new ChatItem() { Name = "chat1" });
-            clc.Chats.Add(new ChatItem() { Name = "group1" ,IsGroup=true});
-            clc.Chats.Add(new ChatItem() { Name = "group2" ,IsGroup=true});
+            /*ChatsListControl.Chats.Add(new OnePersonChatItem() { Name = "chat1" });
+            ChatsListControl.Chats.Add(new GroupChatItem() { Name = "group1" });
+            ChatsListControl.Chats.Add(new GroupChatItem() { Name = "group2" });*/
 
-            ChatMessageAreaControl.CurrentChat = clc.Chats.First();
-            var chat1 = clc.Chats.First();
-            ChatMessageAreaControl.CurrentUser= new UserInfo() { Name = Environment.UserName };
-            chat1.Messages.Add(new TextChatMessage() { Text = "Hello!  123 :)", Owner = ChatMessageAreaControl.CurrentUser});
-            chat1.Messages.Add(new TextChatMessage() { Text = "Hi", Owner = ChatMessageAreaControl.CurrentUser });
-            chat1.Messages.Add(new TextChatMessage() { Text = "how are you?", Owner = new UserInfo() { Name = "user2" } });
+            //ChatMessageAreaControl.CurrentChat = ChatsListControl.Chats.First();
+            //var chat1 = ChatsListControl.Chats.First();
+            /*   chat1.Messages.Add(new TextChatMessage() { Text = "Hello!  123 :)", Owner = ChatMessageAreaControl.CurrentUser });
+               chat1.Messages.Add(new TextChatMessage() { Text = "Hi", Owner = ChatMessageAreaControl.CurrentUser });
+               chat1.Messages.Add(new TextChatMessage() { Text = "how are you?", Owner = new UserInfo() { Name = "user2" } });
 
-
+               */
             mainPanel.Elements.Add(clc);
             chatControl = new ChatControl() { Parent = mainPanel };
             mainPanel.Elements.Add(chatControl);
-            settings=  new SettingsControl() { Parent=mainPanel};
             pictureBox1.MouseDoubleClick += PictureBox1_MouseDoubleClick;
 
             Elements.Add(mainPanel);
@@ -72,7 +70,10 @@ namespace TeamOn
             normalLeft = Left;
             normalTop = Top;
 
-            loadConfig();
+            Settings.LoadSettings();
+            ChatMessageAreaControl.CurrentUser = new UserInfo() { Name = Settings.Nickname };
+
+            settings = new SettingsControl() { Parent = mainPanel };
             connectStart();
 
         }
@@ -80,12 +81,13 @@ namespace TeamOn
         SettingsControl settings;
         public void SwitchLayoutSettings()
         {
-            if (mainPanel.Elements[1]==chatControl)
+            if (mainPanel.Elements[1] == chatControl)
             {
-                mainPanel.Elements[1] =settings;
+                mainPanel.Elements[1] = settings;
             }
             else
             {
+                Settings.SaveSettings();
                 mainPanel.Elements[1] = chatControl;
             }
         }
@@ -93,10 +95,9 @@ namespace TeamOn
         protected override void OnKeyDown(KeyEventArgs e)
         {
             var ev = new UIKeyDown() { Key = e };
-            foreach (var item in Elements)
+            if (root.CurrentFocusOwner != null)
             {
-                if (ev.Handled) break;
-                item.Event(ev);
+                (root.CurrentFocusOwner as UIElement).Event(ev);
             }
             base.OnKeyDown(e);
         }
@@ -112,32 +113,8 @@ namespace TeamOn
         RootElement root;
 
 
-        void loadConfig()
-        {
-            if (!File.Exists("config.xml")) return;
-            var doc = XDocument.Load("config.xml");
 
-            foreach (var item in doc.Descendants("setting"))
-            {
-                var nm = item.Attribute("name").Value;
-                var vl = item.Attribute("value").Value;
-                switch (nm)
-                {
-                    case "serverIP":
-                        serverIP = vl;
-                        break;
-                    case "serverPort":
-                        serverPort = int.Parse(vl);
-                        break;
-                    default:
-                        break;
-                }
-            }
 
-        }
-
-        string serverIP = "127.0.0.1";
-        int serverPort = 8888;
 
         private void connectStart()
         {
@@ -147,7 +124,7 @@ namespace TeamOn
                 {
                     try
                     {
-                        connect(serverIP, serverPort);
+                        connect(Settings.ServerIP, Settings.ServerPort);
                         if (client.Connected) connectEvent.WaitOne();
 
                     }
@@ -173,14 +150,23 @@ namespace TeamOn
 
         public void UpdateClientsList()
         {
-            /*Invoke(listView2, () =>
+            Invoke(this, () =>
             {
-                listView2.Items.Clear();
-                foreach (var userInfo in client.Users)
+                foreach (var item in ChatClient.Instance.Users)
                 {
-                    listView2.Items.Add(new ListViewItem(new string[] { userInfo.Name }) { Tag = userInfo });
+                    if (item.Name == ChatMessageAreaControl.CurrentUser.Name) continue;
+                    if (!ChatsListControl.Chats.OfType<OnePersonChatItem>().Any(z => z.Person.Name == item.Name))
+                    {
+                        ChatsListControl.Chats.Add(new OnePersonChatItem() { Person = item, Name = item.Name });
+                    }
                 }
-            });*/
+
+                /* listView2.Items.Clear();
+                 foreach (var userInfo in client.Users)
+                 {
+                     listView2.Items.Add(new ListViewItem(new string[] { userInfo.Name }) { Tag = userInfo });
+                 }*/
+            });
         }
         ChatClient client;
         void connect(string ipAddr, int port)
@@ -220,24 +206,29 @@ namespace TeamOn
             };
             client.OnMsgRecieved = (user, str) =>
             {
-                     Invoke((Action)(() =>
-                     {
-                         ChatMessageAreaControl.CurrentChat.Messages.Add(new TextChatMessage() { Text = str, Owner = ChatClient.Instance.Users.First(z => z.Name == user) });
-                      /*   listView1.Items.Add(new ListViewItem(new string[]
-                     {
-                         DateTime.Now.ToLongTimeString() ,
-                         user+"",
-                         str.Length+"",
-                         str
-                     })
-                         { Tag = str });
+                Invoke((Action)(() =>
+                {
+                    var fr = ChatsListControl.Chats.OfType<OnePersonChatItem>().FirstOrDefault(z => z.Person.Name == user);
+                    if (fr != null)
+                    {
+                        fr.AddMessage(new TextChatMessage(DateTime.Now, str) { Owner = ChatClient.Instance.Users.First(z => z.Name == user) });
+                    }
+
+                    /*   listView1.Items.Add(new ListViewItem(new string[]
+                   {
+                       DateTime.Now.ToLongTimeString() ,
+                       user+"",
+                       str.Length+"",
+                       str
+                   })
+                       { Tag = str });
 
 
-                         richTextBox2.Invoke((Action)(() =>
-                         {
-                             richTextBox2.Text = str;
-                         }));*/
-                     }));
+                       richTextBox2.Invoke((Action)(() =>
+                       {
+                           richTextBox2.Text = str;
+                       }));*/
+                }));
 
             };
             client.Connect(ipAddr, port);
@@ -245,6 +236,8 @@ namespace TeamOn
             client.FetchClients();
         }
         ChatsListControl clc;
+
+
         private void Form1_Resize(object sender, EventArgs e)
         {
 
@@ -282,6 +275,10 @@ namespace TeamOn
         int normalTop;
         private void PictureBox1_MouseDoubleClick(object sender, MouseEventArgs e)
         {
+            if (Elements.OfType<UIButton>().Any(z =>
+             {
+                 return z.Rect.Contains(ctx.GetCursor());
+             })) return;
             var pos = ctx.GetCursor();
             if (pos.Y < headerHeight)
             {
@@ -315,7 +312,7 @@ namespace TeamOn
 
         private void PictureBox1_MouseUp(object sender, MouseEventArgs e)
         {
-            var bd = new UIMouseButtonUp() { Position = ctx.GetCursor(), Button = e.Button };
+            var bd = new UIMouseButtonUp() { Position = ctx.GetCursor(), Button = e.Button, Context = ctx };
             foreach (var item in Elements)
             {
                 if (bd.Handled) continue;
@@ -338,13 +335,14 @@ namespace TeamOn
         int startWidth;
         int startHeight;
 
-
         private void PictureBox1_MouseDown(object sender, MouseEventArgs e)
         {
             var pos = ctx.GetCursor();
 
-
-            if (!Elements[0].Rect.Contains(pos))
+            if (!Elements.OfType<UIButton>().Any(z =>
+            {
+                return z.Rect.Contains(ctx.GetCursor());
+            }))
             {
                 if (pos.X < 10)
                 {
@@ -402,7 +400,7 @@ namespace TeamOn
                 }
             }
 
-            var bd = new UIMouseButtonDown() { Position = ctx.GetCursor(), Button = e.Button };
+            var bd = new UIMouseButtonDown() { Position = ctx.GetCursor(), Button = e.Button, Context = ctx };
             foreach (var item in Elements)
             {
                 if (bd.Handled) continue;
@@ -484,15 +482,15 @@ namespace TeamOn
             {
                 if ((resizeCaptured && (resizeDirection == ResizeDirectionEnum.Left || resizeDirection == ResizeDirectionEnum.Right)) || (pos2.X < 10 || (pos2.X < Width && pos2.X > (Width - 10))))
                 {
-                    ctx.SetTempCursor(Cursors.SizeWE,2);
+                    ctx.SetTempCursor(Cursors.SizeWE, 2);
                 }
                 if ((pos2.Y < 5 || (pos2.Y < Height && pos2.Y > (Height - 5))))
                 {
-                    ctx.SetTempCursor(Cursors.SizeNS,2);
+                    ctx.SetTempCursor(Cursors.SizeNS, 2);
                 }
                 if (((pos2.X < Width && pos2.X > (Width - 10)) && (pos2.Y < Height && pos2.Y > (Height - 5))))
                 {
-                    ctx.SetTempCursor(Cursors.SizeNWSE,2);
+                    ctx.SetTempCursor(Cursors.SizeNWSE, 2);
                 }
             }
 
@@ -508,10 +506,8 @@ namespace TeamOn
 
             gr.FillEllipse(client.Connected ? Brushes.LawnGreen : Brushes.Yellow, 1, 1, 15, 15);
             gr.DrawEllipse(Pens.Black, 1, 1, 15, 15);
-            var ms = gr.MeasureString("Team Online", SystemFonts.DefaultFont);
-            gr.DrawString("Team Online", SystemFonts.DefaultFont, Brushes.Azure, Width / 2 - ms.Width / 2, 3);
-
-
+            var ms = gr.MeasureString($"Team Online ({Settings.Nickname})", SystemFonts.DefaultFont);
+            gr.DrawString($"Team Online ({Settings.Nickname})", SystemFonts.DefaultFont, Brushes.Azure, Width / 2 - ms.Width / 2, 3);
 
             foreach (var item in Elements)
             {
@@ -555,22 +551,43 @@ namespace TeamOn
         }
     }
 
-    public class ChatItem
+    public abstract class ChatItem
     {
         public string Name;
-        public List<UserInfo> Users = new List<UserInfo>();
-        public bool IsGroup;
-        public UserInfo Owner;
         public List<ChatMessage> Messages = new List<ChatMessage>();
-
+        public void AddMessage(ChatMessage msg)
+        {
+            Messages.Add(msg);
+            if (msg.Owner.Name != ChatMessageAreaControl.CurrentUser.Name)
+                NewMessagesCounter++;
+        }
+        public int NewMessagesCounter;
     }
+
+    public class OnePersonChatItem : ChatItem
+    {
+        public UserInfo Person;
+    }
+
+    public class GroupChatItem : ChatItem
+    {
+        public List<UserInfo> Users = new List<UserInfo>();
+        public UserInfo Owner;
+    }
+
     public abstract class ChatMessage
     {
         public UserInfo Owner;
+        public DateTime DateTime;
     }
 
     public class TextChatMessage : ChatMessage
     {
+        public TextChatMessage(DateTime time, string text)
+        {
+            Text = text;
+            DateTime = time;
+        }
         public string Text;
     }
     public class ImageChatMessage : ChatMessage
@@ -581,6 +598,7 @@ namespace TeamOn
 
     public class UserInfo
     {
+        public int Id;
         public string Name;
     }
 
@@ -589,12 +607,12 @@ namespace TeamOn
     {
         public override void Draw(DrawingContext ctx)
         {
-            
+
         }
 
         public override void Event(UIEvent ev)
         {
-            
+
         }
     }
 

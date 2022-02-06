@@ -7,8 +7,27 @@ namespace TeamOn
     {
         public SettingsControl()
         {
-            allowConnect.Parent = this;
+            AddElement(allowConnect);
+            AddElement(nicknameLabel);
+            AddElement(nickNameTextBox);
+            AddElement(serverIpTextBox);
+            AddElement(serverIpLabel);
+
+            nicknameLabel.Text = "Nickname";
+            serverIpLabel.Text = "Server IP";
+
             allowConnect.Text = "Allow remote connects";
+            nickNameTextBox.Text = Settings.Nickname;
+            serverIpTextBox.Text = Settings.ServerIP;
+            nickNameTextBox.TextChanged = (x) =>
+            {
+                Settings.Nickname = x.Text;
+            }; 
+            serverIpTextBox.TextChanged = (x) =>
+            {
+                Settings.ServerIP = x.Text;
+            };
+
             allowConnect.CheckedChanged = (x) =>
             {
                 TeamScreen.TeamScreenServer.AllowConnects = allowConnect.Checked;
@@ -19,23 +38,35 @@ namespace TeamOn
             };
         }
         UICheckBox allowConnect = new UICheckBox();
+        UITextBox nickNameTextBox = new UITextBox();
+        UILabel serverIpLabel = new UILabel();
+        UITextBox serverIpTextBox = new UITextBox();
+        UILabel nicknameLabel = new UILabel();
 
-        public override void Draw(DrawingContext ctx)
-        {
-            allowConnect.Draw(ctx);
-            base.Draw(ctx);
-        }
-        public override void Event(UIEvent ev)
-        {
-            allowConnect.Event(ev);
-
-        }
+        
+        
         public override Rectangle? GetRectangleOfChild(UIElement elem)
         {
             var bound = Parent.GetRectangleOfChild(this).Value;
             if (elem == allowConnect)
             {
-                return new Rectangle(bound.X+20, bound.Y+20, 100, 30);
+                return new Rectangle(bound.X + 20, bound.Y + 20, 100, 30);
+            }
+            if (elem == nickNameTextBox)
+            {
+                return new Rectangle(bound.X + 100, bound.Y + 60, 100, 30);
+            }
+            if (elem == nicknameLabel)
+            {
+                return new Rectangle(bound.X + 20, bound.Y + 60, 100, 30);
+            }
+            if (elem == serverIpTextBox)
+            {
+                return new Rectangle(bound.X + 100, bound.Y + 100, 100, 30);
+            }
+            if (elem == serverIpLabel)
+            {
+                return new Rectangle(bound.X + 20, bound.Y + 100, 100, 30);
             }
             return base.GetRectangleOfChild(elem);
         }

@@ -2,7 +2,7 @@
 
 namespace TeamOn.Controls
 {
-    public struct RowColumnPanelStyle
+    public class RowColumnPanelStyle
     {
         public SizeType Type;
         public int Size;

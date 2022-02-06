@@ -10,6 +10,11 @@ namespace TeamOn.Controls
             return null;
         }
 
+        public void AddElement(UIElement el)
+        {
+            el.Parent = this;
+            Elements.Add(el);
+        }
         public List<RowColumnPanelStyle> Styles = new List<RowColumnPanelStyle>();
 
         public List<UIElement> Elements = new List<UIElement>();

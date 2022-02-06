@@ -51,6 +51,19 @@ namespace TeamOnServer
                         var ind = line.IndexOf("=");
                         var msg = line.Substring(ind + 1);
                         uinfo.Name = msg;
+
+                        if (streams.Where(z => z.Tag != uinfo).Select(z => z.Tag as UserInfo).Any(z => z.Name == msg))
+                        {
+                            Console.ForegroundColor = ConsoleColor.Red;
+                            Console.WriteLine("reject user init = " + msg);
+                            Console.ForegroundColor = ConsoleColor.White;
+                            //reject connection
+                            stream.Close();
+                            break;
+                        }
+                        Console.ForegroundColor = ConsoleColor.Green;
+                        Console.WriteLine("user init = " + msg);
+                        Console.ForegroundColor = ConsoleColor.White;
                         NewClient();
 
                     }
@@ -59,15 +72,17 @@ namespace TeamOnServer
 
                         var ind = line.IndexOf("=");
                         var msg = line.Substring(ind + 1);
-                        var bs64 = Convert.FromBase64String(msg);
+                        var spl = msg.Split(';').ToArray();
+                        var target = spl[1];
 
+                        var bs64 = Convert.FromBase64String(spl[0]);
                         var str = Encoding.UTF8.GetString(bs64);
 
 
                         StringBuilder sb = new StringBuilder();
                         sb.AppendLine("<?xml version=\"1.0\"?>");
                         sb.AppendLine("<root>");
-                        sb.AppendLine(string.Format("<message user=\"{0}\">", uinfo.Name));
+                        sb.AppendLine(string.Format("<message user=\"{0}\" target=\"{1}\">", uinfo.Name, target));
                         sb.AppendFormat("<![CDATA[{0}]]>", str);
                         sb.AppendLine(string.Format("</message>", uinfo.Name, str));
                         sb.AppendLine("</root>");
@@ -79,7 +94,7 @@ namespace TeamOnServer
 
                         var ree = Convert.ToBase64String(bt);
 
-                        this.SendAll("MSG=" + ree);
+                        this.SendTo("MSG=" + ree, target);
                     }
                     else if (line.StartsWith("CLIENTS"))
                     {
@@ -130,13 +145,26 @@ namespace TeamOnServer
                 catch (IOException iex)
                 {
                     lock (streams)
+                    {
+                        Console.ForegroundColor = ConsoleColor.Yellow;
+                        Console.WriteLine((cinf.Tag as UserInfo).Name + " - removed");
+                        Console.ForegroundColor = ConsoleColor.White;
                         streams.Remove(cinf);
+                    }
                     sendAllClientUpdates();
                     break;
                 }
                 catch (Exception ex)
                 {
                     Console.WriteLine(ex.Message);
+                    lock (streams)
+                    {
+                        Console.ForegroundColor = ConsoleColor.Yellow;
+                        Console.WriteLine((cinf.Tag as UserInfo).Name + " - removed");
+                        Console.ForegroundColor = ConsoleColor.White;
+                        streams.Remove(cinf);
+                    }
+                    sendAllClientUpdates();
                     break;
                     //TcpRoutine.ErrorSend(stream);
                 }
@@ -198,6 +226,31 @@ namespace TeamOnServer
             List<ConnectionInfo> infos = new List<ConnectionInfo>();
             foreach (var connectionInfo in streams)
             {
+                try
+                {
+                    StreamWriter wrt = new StreamWriter(connectionInfo.Stream);
+                    wrt.WriteLine(ln);
+                    wrt.Flush();
+                }
+                catch (Exception ex)
+                {
+                    infos.Add(connectionInfo);
+                }
+            }
+            lock (streams)
+            {
+                foreach (var connectionInfo in infos)
+                {
+                    streams.Remove(connectionInfo);
+                }
+            }
+        }
+        public void SendTo(string ln, string target)
+        {
+            List<ConnectionInfo> infos = new List<ConnectionInfo>();
+            foreach (var connectionInfo in streams)
+            {
+                if ((connectionInfo.Tag as UserInfo).Name != target) continue;
                 try
                 {
                     StreamWriter wrt = new StreamWriter(connectionInfo.Stream);

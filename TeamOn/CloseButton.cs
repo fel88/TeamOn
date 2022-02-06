@@ -1,10 +1,10 @@
 ﻿using System.Drawing;
 using System.Windows.Forms;
-using Button = TeamOn.Controls.Button;
+using TeamOn.Controls;
 
 namespace TeamOn
 {
-    public class CloseButton : Button
+    public class CloseButton : UIButton
     {
         public CloseButton(Form owner)
         {

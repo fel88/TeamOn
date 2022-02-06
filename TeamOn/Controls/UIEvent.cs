@@ -3,6 +3,7 @@
     public class UIEvent
     {
         public bool Handled;
+        public DrawingContext Context;
 
     }
 }

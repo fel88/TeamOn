@@ -19,7 +19,7 @@ namespace TeamOn
         public static ChatClient Instance;
         private NetworkStream clientStream;
 
-        public string Nickname = Environment.UserName;
+        public string Nickname => Settings.Nickname;
         TcpClient client = new TcpClient();
         public bool Connected
         {
@@ -86,7 +86,7 @@ namespace TeamOn
             th.IsBackground = true;
         }
 
-        internal void SendMsg(string txt)
+        internal void SendMsg(string txt, string target)
         {
 
             var bt = Encoding.UTF8.GetBytes(txt);
@@ -94,7 +94,7 @@ namespace TeamOn
             var bs64 = Convert.ToBase64String(bt);
             var wr = new StreamWriter(clientStream);
 
-            wr.WriteLine("MSG=" + bs64);
+            wr.WriteLine("MSG=" + bs64+";"+target);
             wr.Flush();
         }
 
@@ -127,7 +127,12 @@ namespace TeamOn
                         {
 
                             var ln = rdr.ReadLine();
-
+                            if (ln == null)
+                            {
+                                client.Close();
+                                //disconnect
+                                break;
+                            }
                             if (ln.StartsWith("CLIENTS"))
                             {
                                 ln = ln.Substring("CLIENTS".Length + 1);
@@ -272,9 +277,15 @@ namespace TeamOn
                             }
                         }
                     }
-                    catch (IOException ex)
+                    
+                    catch (IOException iex)
+                    {
+                        OnError?.Invoke(iex.Message);
+                    }
+                    catch (Exception ex)
                     {
                         OnError?.Invoke(ex.Message);
+
                     }
 
                 }

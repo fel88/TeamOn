@@ -13,21 +13,27 @@ namespace TeamOn.Controls
             }
             return null;
         }
+
         public ChatHeaderControl()
         {
-            connectButton = new Button() { Text = "connect to screen", Parent = this, HoveredBrush = Brushes.ForestGreen };
+            connectButton = new UIButton() { Text = "connect to screen", Parent = this, HoveredBrush = Brushes.ForestGreen };
         }
 
-        Button connectButton;
+        UIButton connectButton;
 
         public override void Draw(DrawingContext ctx)
         {
+            Visible = ChatMessageAreaControl.CurrentChat != null;
+            if (!Visible) return;
             var bound = Parent.GetRectangleOfChild(this).Value;
             ctx.Graphics.FillRectangle(Brushes.LightSeaGreen, bound);
-            ctx.Graphics.DrawString(ChatMessageAreaControl.CurrentChat.Name, new Font("Arial", 18, FontStyle.Bold), Brushes.White, bound.X + 5, bound.Y + 5);
+            if (ChatMessageAreaControl.CurrentChat != null)
+            {
+                ctx.Graphics.DrawString(ChatMessageAreaControl.CurrentChat.Name, new Font("Arial", 18, FontStyle.Bold), Brushes.White, bound.X + 5, bound.Y + 5);
 
-            if (!ChatMessageAreaControl.CurrentChat.IsGroup)
-                connectButton.Draw(ctx);
+                if (!(ChatMessageAreaControl.CurrentChat is GroupChatItem))
+                    connectButton.Draw(ctx);
+            }
         }
 
         public override void Event(UIEvent ev)

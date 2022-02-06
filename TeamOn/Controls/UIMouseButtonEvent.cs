@@ -8,4 +8,9 @@ namespace TeamOn.Controls
         public Point Position;
         public MouseButtons Button;
     }
+
+    public class UIFocusChangedEvent : UIEvent
+    {
+        public IFocusContainer NewFocusOwner;
+    }
 }
