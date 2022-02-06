@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Windows.Forms;
 using TeamOn.Controls;
@@ -10,6 +11,7 @@ namespace TeamOn
     {
         public ChatTextBoxControl()
         {
+            Instance = this;
             WatermarkText = "Enter message..";
             ImagePastedAllowed = true;
             TextChanged = (x) =>
@@ -21,6 +23,7 @@ namespace TeamOn
             };
         }
 
+        public static ChatTextBoxControl Instance;
         public override void Draw(DrawingContext ctx)
         {
             Visible = ChatMessageAreaControl.CurrentChat != null;
@@ -44,19 +47,34 @@ namespace TeamOn
                 if (kd.Key.KeyCode == Keys.Enter)
                 {
                     if (client == null || !client.Connected) return;
+                    if (BitmapContent != null)
+                    {
+                        Directory.CreateDirectory("Sended");
+                        var dt = DateTime.Now;
+                        var name = $"sended-image {dt.Year}-{dt.Month}-{dt.Day} {dt.Hour}-{dt.Minute}-{dt.Second}.jpg";
+                        var path = Path.Combine("Sended", name);
+                        BitmapContent.Save(path, System.Drawing.Imaging.ImageFormat.Jpeg);
+                        client.SendImage(BitmapContent, (ChatMessageAreaControl.CurrentChat as OnePersonChatItem).Person.Name, progress: (perc) =>
+                        {
+
+                        });
+
+                        ChatMessageAreaControl.CurrentChat.AddMessage(new ImageLinkChatMessage() { Owner = ChatMessageAreaControl.CurrentUser, Path = path, DateTime = DateTime.Now });
+
+
+                        Text = string.Empty;
+                        BitmapContent = null;
+                        curretPosition = 0;
+                    }
                     if (!string.IsNullOrEmpty(Text) && Text.Replace("\r", "").Replace("\n", "").Length != 0)
                     {
-                        client.SendMsg(Text, (ChatMessageAreaControl.CurrentChat as OnePersonChatItem).Person.Name);
+
                         //var cc = FindParent<ChatControl>() as ChatControl;
                         //var ma = cc.Elements[1] as ChatMessageAreaControl;
-                        if (BitmapContent != null)
-                        {
-                            ChatMessageAreaControl.CurrentChat.AddMessage(new ImageChatMessage() { Owner = ChatMessageAreaControl.CurrentUser, Thumbnail = BitmapContent, DateTime = DateTime.Now });
-                        }
-                        else
-                        {
-                            ChatMessageAreaControl.CurrentChat.AddMessage(new TextChatMessage(DateTime.Now, Text) { Owner = ChatMessageAreaControl.CurrentUser });
-                        }
+
+                        client.SendMsg(Text, (ChatMessageAreaControl.CurrentChat as OnePersonChatItem).Person.Name);
+                        ChatMessageAreaControl.CurrentChat.AddMessage(new TextChatMessage(DateTime.Now, Text) { Owner = ChatMessageAreaControl.CurrentUser });
+
 
                         Text = string.Empty;
                         BitmapContent = null;

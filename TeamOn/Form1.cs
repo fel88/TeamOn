@@ -17,6 +17,12 @@ namespace TeamOn
         public Form1()
         {
             InitializeComponent();
+
+            pictureBox1.AllowDrop = true;
+            pictureBox1.DragEnter += PictureBox1_DragEnter;
+            pictureBox1.DragDrop += PictureBox1_DragDrop;
+
+
             bmp = new Bitmap(Screen.PrimaryScreen.Bounds.Width, Screen.PrimaryScreen.Bounds.Height);
             ctx.Graphics = Graphics.FromImage(bmp);
             ctx.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
@@ -72,11 +78,69 @@ namespace TeamOn
 
             Settings.LoadSettings();
             ChatMessageAreaControl.CurrentUser = new UserInfo() { Name = Settings.Nickname };
-
+            MouseWheel += Form1_MouseWheel;
             settings = new SettingsControl() { Parent = mainPanel };
             connectStart();
+            Load += Form1_Load;
 
         }
+
+        private void PictureBox1_DragDrop(object sender, DragEventArgs e)
+        {
+            var dt = e.Data.GetData(DataFormats.FileDrop);
+            if (dt != null)
+            {
+                var dt2 = dt as string[];
+                foreach (var item in dt2)
+                {
+                    try
+                    {
+                        var bmp = Bitmap.FromFile(item) as Bitmap;
+                        ChatTextBoxControl.Instance.BitmapContent = bmp;
+                        break;
+                    }
+                    catch (Exception ex)
+                    {
+
+                    }
+                }
+            }
+            else
+            {
+
+                var bmp = (Bitmap)e.Data.GetData(DataFormats.Bitmap);
+            }
+
+        }
+
+        private void PictureBox1_DragEnter(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetDataPresent(DataFormats.Bitmap))
+                e.Effect = DragDropEffects.Move;
+
+            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                e.Effect = DragDropEffects.Copy;
+            }
+        }
+
+        private void Form1_MouseWheel(object sender, MouseEventArgs e)
+        {
+            UIMouseWheel w = new UIMouseWheel() { Delta = e.Delta };
+            foreach (var item in Elements)
+            {
+                if (w.Handled) break;
+                item.Event(w);
+            }
+        }
+
+        private void Form1_Load(object sender, EventArgs e)
+        {
+            mf = new MessageFilter();
+            Application.AddMessageFilter(mf);
+        }
+
+        MessageFilter mf = null;
         ChatControl chatControl;
         SettingsControl settings;
         public void SwitchLayoutSettings()
@@ -190,8 +254,28 @@ namespace TeamOn
 
                 }));*/
             };
-            client.OnFileRecieved = (uin, path, size) =>
+            client.OnFileRecieved = (user, path, size) =>
             {
+                Invoke((Action)(() =>
+                {
+                    var fr = ChatsListControl.Chats.OfType<OnePersonChatItem>().FirstOrDefault(z => z.Person.Name == user);
+                    if (fr != null)
+                    {
+                        fr.Person.Online = true;
+                        var fi = new FileInfo(path);
+
+                        var uri = new Uri(fi.FullName);
+                        if (uri.LocalPath.EndsWith(".jpg"))
+                        {
+                            fr.AddMessage(new ImageLinkChatMessage() { Path = uri.LocalPath.ToString(), Owner = ChatClient.Instance.Users.First(z => z.Name == user) });
+                        }
+                        else
+                        {
+                            fr.AddMessage(new TextChatMessage(DateTime.Now, uri.AbsoluteUri.ToString()) { Owner = ChatClient.Instance.Users.First(z => z.Name == user) });
+                        }
+                    }
+                }));
+
                 /*progressBar1.Value = (int)100;
                 label4.Text = (int)100 + "%";
                 listView1.Items.Add(new ListViewItem(new string[]
@@ -222,21 +306,6 @@ namespace TeamOn
                         fr.Person.Online = true;
                         fr.AddMessage(new TextChatMessage(DateTime.Now, str) { Owner = ChatClient.Instance.Users.First(z => z.Name == user) });
                     }
-
-                    /*   listView1.Items.Add(new ListViewItem(new string[]
-                   {
-                       DateTime.Now.ToLongTimeString() ,
-                       user+"",
-                       str.Length+"",
-                       str
-                   })
-                       { Tag = str });
-
-
-                       richTextBox2.Invoke((Action)(() =>
-                       {
-                           richTextBox2.Text = str;
-                       }));*/
                 }));
 
             };
@@ -632,6 +701,22 @@ namespace TeamOn
         public Bitmap Thumbnail;
         public string Path;
     }
+    public class ImageLinkChatMessage : ChatMessage
+    {
+        public string Path;
+        public Bitmap Thumbnail;
+        public void GenerateThumbnail()
+        {
+            if (Thumbnail != null) return;
+            var bmp = Bitmap.FromFile(Path);
+            var aspect = bmp.Height / (float)bmp.Width;
+            Thumbnail = new Bitmap(120, (int)(120 * aspect));
+            var gr = Graphics.FromImage(Thumbnail);
+            gr.DrawImage(bmp, new RectangleF(0, 0, Thumbnail.Width, Thumbnail.Height), new RectangleF(0, 0, bmp.Width, bmp.Height), GraphicsUnit.Pixel);
+            gr.Dispose();
+            bmp.Dispose();
+        }
+    }
 
     public class UserInfo
     {
@@ -653,5 +738,4 @@ namespace TeamOn
 
         }
     }
-
 }

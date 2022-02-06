@@ -70,6 +70,7 @@
       <DependentUpon>Form1.cs</DependentUpon>
     </Compile>
     <Compile Include="Controls\Panel.cs" />
+    <Compile Include="MessageFilter.cs" />
     <Compile Include="MinimizeButton.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

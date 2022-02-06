@@ -78,38 +78,68 @@ namespace TeamOn.Controls
 
                         if (msg.Owner != CurrentUser)
                         {
-                            var rect = new RectangleF(bound.X + leftGap, currentY - ms.Height, ms.Width, ms.Height);
+                            var rect = new RectangleF(bound.X + leftGap, currentY - ms.Height + scrollOffsetY, ms.Width, ms.Height);
                             var rect2 = new RectangleF(rect.X, rect.Y, rect.Width, rect.Height);
                             rect2.Inflate(5, 5);
                             ctx.Graphics.FillRectangle(Brushes.White, rect2);
 
-                            CheckAndDrawTextBlock(msg, tcm.Text, rect, ctx);
+                            CheckAndDrawTextBlock(msg, rect, ctx);
 
-
-                            ctx.Graphics.DrawString(tcm.Owner.Name, SystemFonts.DefaultFont, Brushes.Black, bound.X + 2, currentY - ms.Height);
+                            ctx.Graphics.DrawString(tcm.Owner.Name, SystemFonts.DefaultFont, Brushes.Black, bound.X + 2, currentY - ms.Height + scrollOffsetY);
 
                             currentY -= gap * 3 + (int)ms.Height;
                         }
                         else
                         {
-                            var rect = new RectangleF(bound.Right - ms.Width - leftGap, currentY - ms.Height, ms.Width, ms.Height);
+                            var rect = new RectangleF(bound.Right - ms.Width - 10, currentY - ms.Height + scrollOffsetY, ms.Width, ms.Height);
                             var rect2 = new RectangleF(rect.X, rect.Y, rect.Width, rect.Height);
                             rect2.Inflate(5, 5);
                             ctx.Graphics.FillRectangle(Brushes.White, rect2);
 
-                            CheckAndDrawTextBlock(msg, tcm.Text, rect, ctx);
-                            ctx.Graphics.DrawString(tcm.Owner.Name, SystemFonts.DefaultFont, Brushes.Black, bound.Right - leftGap, currentY - ms.Height);
+                            CheckAndDrawTextBlock(msg, rect, ctx);
+                            //ctx.Graphics.DrawString(tcm.Owner.Name, SystemFonts.DefaultFont, Brushes.Black, bound.Right - leftGap, currentY - ms.Height);
 
                             currentY -= gap * 3 + (int)ms.Height;
                         }
+                    }
+                    else if (msg is ImageLinkChatMessage ilcm)
+                    {
+                        ilcm.GenerateThumbnail();
 
+                        var ms = new Rectangle(0, 0, 120, ilcm.Thumbnail.Height);
+                        if (msg.Owner != CurrentUser)
+                        {
+                            var rect = new RectangleF(bound.X + leftGap, currentY - ms.Height + scrollOffsetY, ms.Width, ms.Height);
+                            var rect2 = new RectangleF(rect.X, rect.Y, rect.Width, rect.Height);
+                            rect2.Inflate(5, 5);
 
+                            ctx.Graphics.DrawImage(ilcm.Thumbnail, rect2.X, rect2.Y);
+
+                            //ctx.Graphics.FillRectangle(Brushes.White, rect2);
+
+                            CheckAndDrawTextBlock(msg, rect, ctx);
+
+                            ctx.Graphics.DrawString(ilcm.Owner.Name, SystemFonts.DefaultFont, Brushes.Black, bound.X + 2, currentY - ms.Height + scrollOffsetY);
+
+                            currentY -= gap * 3 + (int)ms.Height;
+                        }
+                        else
+                        {
+                            var rect = new RectangleF(bound.Right - ms.Width - 10, currentY - ms.Height + scrollOffsetY, ms.Width, ms.Height);
+                            var rect2 = new RectangleF(rect.X, rect.Y, rect.Width, rect.Height);
+                            rect2.Inflate(5, 5);
+                            //ctx.Graphics.FillRectangle(Brushes.White, rect2);
+                            ctx.Graphics.DrawImage(ilcm.Thumbnail, rect2.X, rect2.Y);
+
+                            CheckAndDrawTextBlock(msg, rect, ctx);
+                            //ctx.Graphics.DrawString(tcm.Owner.Name, SystemFonts.DefaultFont, Brushes.Black, bound.Right - leftGap, currentY - ms.Height);
+
+                            currentY -= gap * 3 + (int)ms.Height;
+                        }
                     }
                 }
-
-
-
             }
+
             //ctx.Graphics.FillRectangle(Brushes.White, bound.X, bound.Bottom - 50, bound.Width, 50);
             var pos = ctx.GetCursor();
             /*if (new Rectangle(bound.X, bound.Bottom - 50, bound.Width, 50).Contains(pos))
@@ -124,12 +154,10 @@ namespace TeamOn.Controls
             //ctx.Graphics.FillRectangle(Brushes.DarkGoldenrod, bound.Value);
         }
 
-        private void CheckAndDrawTextBlock(ChatMessage c, string text, RectangleF rect, DrawingContext ctx)
+        private void CheckAndDrawTextBlock(ChatMessage c, RectangleF rect, DrawingContext ctx)
         {
             Uri outUri;
-
-            if (Uri.TryCreate(text, UriKind.Absolute, out outUri)
-               && (outUri.Scheme == Uri.UriSchemeHttp || outUri.Scheme == Uri.UriSchemeHttps))
+            if (c is ImageLinkChatMessage ilcm)
             {
                 var fr = regions.FirstOrDefault(z => z.Owner == c);
                 if (fr == null)
@@ -139,28 +167,92 @@ namespace TeamOn.Controls
                 }
 
                 fr.Rect = rect;
-                ctx.Graphics.DrawString(text, SystemFonts.DefaultFont, Brushes.Blue, rect);
-                ctx.Graphics.DrawLine(Pens.Blue, rect.X, rect.Bottom - 1, rect.Right, rect.Bottom - 1);
             }
-            else
+            else if (c is TextChatMessage tcm)
             {
-                ctx.Graphics.DrawString(text, SystemFonts.DefaultFont, Brushes.Black, rect);
+                var text = tcm.Text;
+                if (Uri.TryCreate(text, UriKind.Absolute, out outUri)
+                   /*&& (outUri.Scheme == Uri.UriSchemeHttp || outUri.Scheme == Uri.UriSchemeHttps)*/)
+                {
+                    var fr = regions.FirstOrDefault(z => z.Owner == c);
+                    if (fr == null)
+                    {
+                        regions.Add(new TextSpecificRegion() { Owner = c });
+                        fr = regions.Last();
+                    }
+
+                    fr.Rect = rect;
+                    ctx.Graphics.DrawString(text, SystemFonts.DefaultFont, Brushes.Blue, rect);
+                    ctx.Graphics.DrawLine(Pens.Blue, rect.X, rect.Bottom - 1, rect.Right, rect.Bottom - 1);
+                }
+                else
+                {
+                    ctx.Graphics.DrawString(text, SystemFonts.DefaultFont, Brushes.Black, rect);
+                }
             }
         }
 
+        int scrollOffsetY = 0;
         public override void Event(UIEvent ev)
         {
+            if (ev is UIMouseWheel w)
+            {
+                scrollOffsetY += w.Delta;
+                if (scrollOffsetY < 0) { scrollOffsetY = 0; }
+            }
+
             if (ev is UIMouseButtonDown md)
             {
-                foreach (var item in regions)
+                if (md.Button == MouseButtons.Left)
                 {
-                    if (item.Rect.Contains(md.Position))
+                    foreach (var item in regions)
                     {
-                        if (item.Owner is TextChatMessage tcm)
+                        if (item.Rect.Contains(md.Position))
                         {
-                            Process.Start(tcm.Text);
+                            if (item.Owner is ImageLinkChatMessage ilcm)
+                            {
+                                try
+                                {
+                                    if (File.Exists(ilcm.Path))
+                                    {
+                                        Process.Start(ilcm.Path);
+                                    }
+                                    else
+                                    {
+                                        var uri = new Uri(ilcm.Path);
+                                        if (File.Exists(uri.LocalPath))
+                                        {
+                                            Process.Start(uri.LocalPath);
+                                        }
+                                    }
+                                }
+                                catch (Exception ex)
+                                {
+                                    MessageBox.Show(ex.Message);
+                                }
+                            }
+                            else
+                            if (item.Owner is TextChatMessage tcm)
+                            {
+                                try
+                                {
+                                    var uri = new Uri(tcm.Text);
+                                    if (File.Exists(uri.LocalPath))
+                                    {
+                                        Process.Start(uri.LocalPath);
+                                    }
+                                    else
+                                    {
+                                        Process.Start(tcm.Text);
+                                    }
+                                }
+                                catch (Exception ex)
+                                {
+                                    MessageBox.Show(ex.Message);
+                                }
+                            }
+                            break;
                         }
-                        break;
                     }
                 }
             }

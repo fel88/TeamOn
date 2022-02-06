@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -30,6 +32,59 @@ namespace TeamOn
         }
 
         private Thread th2;
+
+        public void SendImage(Bitmap bmp, string target, Action<int> progress = null)
+        {
+            Thread th = new Thread(() =>
+            {
+
+                lock (clientStream)
+                {
+                    fileDownloadSemaphore = new Semaphore(0, 1);
+                    var wr = new StreamWriter(clientStream);
+
+                    MemoryStream ms = new MemoryStream();
+                    bmp.Save(ms, ImageFormat.Jpeg);
+                    var data = ms.ToArray();
+                    int chunkSize = ChunkSize * 1024;
+
+
+                    var dt = DateTime.Now;
+
+                    for (int i = 0; i < data.Length; i += chunkSize)
+                    {
+                        StringBuilder sb = new StringBuilder();
+                        sb.AppendLine("<?xml version=\"1.0\"?>");
+                        sb.AppendLine("<root>");
+                        sb.AppendLine(string.Format("<file sender=\"{0}\" target=\"{1}\" name=\"{2}\" size=\"{3}\" >",
+                            Nickname, target, $"generated-image {dt.Year}-{dt.Month}-{dt.Day} {dt.Hour}-{dt.Minute}-{dt.Second}.jpg", data.Length));
+                        int sz = (int)Math.Min(chunkSize, data.Length - i);
+                        byte[] bb = new byte[sz];
+                        Array.Copy(data, i, bb, 0, sz);
+                        var bs = Convert.ToBase64String(bb);
+
+                        sb.AppendFormat("<chunk offset=\"{0}\" size=\"{1}\">", i, sz);
+                        sb.AppendLine("<![CDATA[" + bs + "]]>");
+                        sb.AppendFormat("</chunk>");
+                        sb.AppendLine("</file>");
+                        sb.AppendLine("</root>");
+
+                        var bt = Encoding.UTF8.GetBytes(sb.ToString());
+
+                        var bs64 = Convert.ToBase64String(bt);
+
+                        wr.WriteLine("FILE=" + bs64);
+                        wr.Flush();
+                        var perc = ((i + sz) / (decimal)data.Length) * 100m;
+                        progress((int)perc);
+                        fileDownloadSemaphore.WaitOne();
+                    }
+                }
+
+            });
+            th.Start();
+            th.IsBackground = true;
+        }
         public void SendFile(string s, UserInfo target, string savePath = "", Action<int> progress = null)
         {
             Thread th = new Thread(() =>
@@ -93,13 +148,13 @@ namespace TeamOn
             var bs64 = Convert.ToBase64String(bt);
             var wr = new StreamWriter(clientStream);
 
-            wr.WriteLine("MSG=" + bs64+";"+target);
+            wr.WriteLine("MSG=" + bs64 + ";" + target);
             wr.Flush();
         }
 
         internal void SendTyping(string target)
-        {                        
-            
+        {
+
             var wr = new StreamWriter(clientStream);
 
             wr.WriteLine("TYPING=;" + target);
@@ -184,7 +239,7 @@ namespace TeamOn
 
                                 var str = Encoding.UTF8.GetString(bs64);
                                 var doc = XDocument.Parse(str);
-                                var msg = doc.Descendants("message").First();                                
+                                var msg = doc.Descendants("message").First();
                                 var user = msg.Attribute("user").Value;
 
                                 OnTyping?.Invoke(user);
@@ -298,7 +353,7 @@ namespace TeamOn
                             }
                         }
                     }
-                    
+
                     catch (IOException iex)
                     {
                         OnError?.Invoke(iex.Message);

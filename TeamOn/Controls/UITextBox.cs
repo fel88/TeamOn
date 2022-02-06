@@ -195,7 +195,7 @@ text.Length) };
         int endSelection;
         int selectionLegth => Math.Abs(endSelection - startSelection);
         public bool ImagePastedAllowed = false;
-        public Bitmap BitmapContent;
+        public Bitmap BitmapContent;        
 
         public override void Event(UIEvent ev)
         {

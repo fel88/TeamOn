@@ -4,4 +4,8 @@
     {
 
     }
+    public class UIMouseWheel : UIMouseButtonEvent
+    {
+        public int Delta;
+    }
 }
