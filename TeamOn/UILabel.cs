@@ -7,10 +7,12 @@ namespace TeamOn
     {
         public string Text;
         public Font TextFont=SystemFonts.DefaultFont;
+
+        public Brush ForeColor = Brushes.Black;
         public override void Draw(DrawingContext ctx)
         {
             var bound = GetBound();
-            ctx.Graphics.DrawString(Text, TextFont, Brushes.Red, bound);
+            ctx.Graphics.DrawString(Text, TextFont, ForeColor, bound);
         }
 
         public override void Event(UIEvent ev)

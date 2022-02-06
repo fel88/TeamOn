@@ -152,12 +152,20 @@ namespace TeamOn
         {
             Invoke(this, () =>
             {
+                foreach (var chat in ChatsListControl.Chats.OfType<OnePersonChatItem>())
+                {
+                    chat.Person.Online = false;
+                }
                 foreach (var item in ChatClient.Instance.Users)
                 {
                     if (item.Name == ChatMessageAreaControl.CurrentUser.Name) continue;
-                    if (!ChatsListControl.Chats.OfType<OnePersonChatItem>().Any(z => z.Person.Name == item.Name))
+                    var fr = ChatsListControl.Chats.OfType<OnePersonChatItem>().FirstOrDefault(z => z.Person.Name == item.Name);
+                    if (fr != null)
+                        fr.Person.Online = true;
+                    if (fr == null)
                     {
                         ChatsListControl.Chats.Add(new OnePersonChatItem() { Person = item, Name = item.Name });
+                        item.Online = true;
                     }
                 }
 
@@ -211,6 +219,7 @@ namespace TeamOn
                     var fr = ChatsListControl.Chats.OfType<OnePersonChatItem>().FirstOrDefault(z => z.Person.Name == user);
                     if (fr != null)
                     {
+                        fr.Person.Online = true;
                         fr.AddMessage(new TextChatMessage(DateTime.Now, str) { Owner = ChatClient.Instance.Users.First(z => z.Name == user) });
                     }
 
@@ -228,6 +237,18 @@ namespace TeamOn
                        {
                            richTextBox2.Text = str;
                        }));*/
+                }));
+
+            };
+            client.OnTyping = (user) =>
+            {
+                Invoke((Action)(() =>
+                {
+                    var fr = ChatsListControl.Chats.OfType<OnePersonChatItem>().FirstOrDefault(z => z.Person.Name == user);
+                    if (fr != null)
+                    {
+                        fr.LastTyping = DateTime.Now;
+                    }
                 }));
 
             };
@@ -282,6 +303,11 @@ namespace TeamOn
             var pos = ctx.GetCursor();
             if (pos.Y < headerHeight)
             {
+                if (pos.X < 20)
+                {
+                    Close();
+                    return;
+                }
                 if (Math.Abs(Width - Screen.PrimaryScreen.Bounds.Width) < 1)
                 {
                     Width = normalWidth;
@@ -312,6 +338,7 @@ namespace TeamOn
 
         private void PictureBox1_MouseUp(object sender, MouseEventArgs e)
         {
+            if (pictureBox1.IsDisposed) return;
             var bd = new UIMouseButtonUp() { Position = ctx.GetCursor(), Button = e.Button, Context = ctx };
             foreach (var item in Elements)
             {
@@ -505,6 +532,14 @@ namespace TeamOn
             gr.FillRectangle((captionCaptured || (pos2.Y > 0 && pos2.Y < headerHeight)) ? Brushes.DarkGreen : Brushes.Navy, 0, 0, Width, headerHeight);
 
             gr.FillEllipse(client.Connected ? Brushes.LawnGreen : Brushes.Yellow, 1, 1, 15, 15);
+
+            if (!client.Connected)
+            {
+                foreach (var item in ChatsListControl.Chats.OfType<OnePersonChatItem>())
+                {
+                    item.Person.Online = false;
+                }
+            }
             gr.DrawEllipse(Pens.Black, 1, 1, 15, 15);
             var ms = gr.MeasureString($"Team Online ({Settings.Nickname})", SystemFonts.DefaultFont);
             gr.DrawString($"Team Online ({Settings.Nickname})", SystemFonts.DefaultFont, Brushes.Azure, Width / 2 - ms.Width / 2, 3);
@@ -567,6 +602,7 @@ namespace TeamOn
     public class OnePersonChatItem : ChatItem
     {
         public UserInfo Person;
+        public DateTime LastTyping;
     }
 
     public class GroupChatItem : ChatItem
@@ -577,6 +613,7 @@ namespace TeamOn
 
     public abstract class ChatMessage
     {
+        public ChatItem Parent;
         public UserInfo Owner;
         public DateTime DateTime;
     }
@@ -600,6 +637,7 @@ namespace TeamOn
     {
         public int Id;
         public string Name;
+        public bool Online;
     }
 
 

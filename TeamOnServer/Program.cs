@@ -96,6 +96,30 @@ namespace TeamOnServer
 
                         this.SendTo("MSG=" + ree, target);
                     }
+                    else if (line.StartsWith("TYPING"))
+                    {
+
+                        var ind = line.IndexOf("=");
+                        var msg = line.Substring(ind + 1);
+                        var spl = msg.Split(';').ToArray();
+                        var target = spl[1];
+
+                        StringBuilder sb = new StringBuilder();
+                        sb.AppendLine("<?xml version=\"1.0\"?>");
+                        sb.AppendLine("<root>");
+                        sb.AppendLine(string.Format("<message user=\"{0}\" target=\"{1}\">", uinfo.Name, target));                        
+                        sb.AppendLine("</message>");
+                        sb.AppendLine("</root>");
+
+                        var estr = sb.ToString();
+
+
+                        var bt = Encoding.UTF8.GetBytes(estr);
+
+                        var ree = Convert.ToBase64String(bt);
+
+                        this.SendTo("TYPING=" + ree, target);
+                    }
                     else if (line.StartsWith("CLIENTS"))
                     {
                         sendClientsList(wrt2);

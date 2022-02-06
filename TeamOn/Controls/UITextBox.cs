@@ -15,22 +15,24 @@ namespace TeamOn.Controls
             RootElement.Instance.RegisterFocusContainer(this);
         }
 
+        public Color BackColor = Color.White;
+        public Color ForeColor = Color.Black;
+
         public string Text = string.Empty;
         int blinkCounter = 0;
         int blinkPeriod = 40;
         public bool Focused { get; set; }
+
+        public int TopMargin = 3;
         public override void Draw(DrawingContext ctx)
         {
             if (!Visible) return;
-
-
-
 
             blinkCounter++;
             blinkCounter %= blinkPeriod;
             var bound = Parent.GetRectangleOfChild(this).Value;
             ctx.Graphics.SetClip(bound);
-            ctx.Graphics.FillRectangle(Brushes.White, bound.X, bound.Y, bound.Width, bound.Height);
+            ctx.Graphics.FillRectangle(new SolidBrush(BackColor), bound.X, bound.Y, bound.Width, bound.Height);
             var pos = ctx.GetCursor();
             if (selectionMode)
             {
@@ -59,7 +61,7 @@ namespace TeamOn.Controls
                 if (ss > 0)
                     right += MeasureDisplayStringWidth(ctx.Graphics, Text.Substring(0, ss), SystemFonts.DefaultFont);
 
-                ctx.Graphics.FillRectangle(Brushes.Blue, right, mss.Y + bound.Y + 5, mss.Width, mss.Height);
+                ctx.Graphics.FillRectangle(Brushes.Blue, right, mss.Y + bound.Y + TopMargin, mss.Width, mss.Height);
             }
 
             if (bound.Contains(pos))
@@ -72,7 +74,7 @@ namespace TeamOn.Controls
                 var ms = ctx.Graphics.MeasureString(Text, SystemFonts.DefaultFont);
 
 
-                ctx.Graphics.DrawString(Text, SystemFonts.DefaultFont, Brushes.Black, bound.X + 10 + imgShift, bound.Y + 5, StringFormat.GenericTypographic);
+                ctx.Graphics.DrawString(Text, SystemFonts.DefaultFont, new SolidBrush(ForeColor), bound.X + 10 + imgShift, bound.Y + TopMargin, StringFormat.GenericTypographic);
 
 
 
@@ -80,7 +82,7 @@ namespace TeamOn.Controls
             else
             {
                 if (!string.IsNullOrEmpty(WatermarkText))
-                    ctx.Graphics.DrawString(WatermarkText, SystemFonts.DefaultFont, Brushes.Gray, bound.X + 10 + imgShift, bound.Y + 5);
+                    ctx.Graphics.DrawString(WatermarkText, SystemFonts.DefaultFont, Brushes.Gray, bound.X + 10 + imgShift, bound.Y + TopMargin);
             }
 
             if (Focused && blinkCounter < blinkPeriod / 2)
@@ -100,7 +102,7 @@ namespace TeamOn.Controls
                 }
                 var ms3 = ctx.Graphics.MeasureString("Aa", SystemFonts.DefaultFont);
                 //ctx.Graphics.DrawLine(Pens.Black, max, bound.Y + 5, max, bound.Y + ms3.Height + 5);
-                ctx.Graphics.DrawLine(Pens.Black, right, bound.Y + 5, right, bound.Y + ms3.Height + 5);
+                ctx.Graphics.DrawLine(Pens.Black, right, bound.Y + TopMargin, right, bound.Y + ms3.Height + TopMargin);
             }
 
 
@@ -222,10 +224,20 @@ text.Length) };
                 {
                     curretPosition--;
 
+
+
                     if (curretPosition < 0)
                     {
                         curretPosition = 0;
+                    }
+                    //if (kd.Key.Modifiers == Keys.Shift)
+                    {
 
+                    }
+                    //else
+                    {
+                        startSelection = curretPosition;
+                        endSelection = startSelection;
                     }
                     blinkCounter = 0;
                 }
@@ -237,7 +249,8 @@ text.Length) };
                     {
                         curretPosition++;
                     }
-
+                    startSelection = curretPosition;
+                    endSelection = startSelection;
                     blinkCounter = 0;
 
                 }
@@ -308,11 +321,13 @@ text.Length) };
                 {
                     if (selectionLegth > 0)
                     {
-                        curretPosition = startSelection;
 
-                        Text = Text.Remove(startSelection, selectionLegth);
+                        var ss = Math.Min(startSelection, endSelection);
+                        curretPosition = ss;
+                        Text = Text.Remove(ss, selectionLegth);
                         TextChanged?.Invoke(this);
-                        endSelection = startSelection;
+                        endSelection = ss;
+                        startSelection = ss;
                     }
                     else
                   if (curretPosition < Text.Length)
@@ -332,11 +347,13 @@ text.Length) };
                     }
                     if (selectionLegth > 0)
                     {
-                        curretPosition = startSelection;
 
-                        Text = Text.Remove(startSelection, selectionLegth);
+                        var ss = Math.Min(startSelection, endSelection);
+                        curretPosition = ss;
+                        Text = Text.Remove(ss, selectionLegth);
                         TextChanged?.Invoke(this);
-                        endSelection = startSelection;
+                        endSelection = ss;
+                        startSelection = ss;
                     }
                     else
                     if (Text.Length > 0 && curretPosition > 0)
@@ -354,13 +371,20 @@ text.Length) };
                     var tt = KeyCodeToUnicode(kd.Key.KeyData);
                     if (tt.Any())
                     {
+                        if (selectionLegth > 0)
+                        {
+                            var ss = Math.Min(startSelection, endSelection);
+                            var es = Math.Max(startSelection, endSelection);
+                            Text = Text.Remove(ss, selectionLegth);
+                            endSelection = ss;
+                            startSelection = ss;
+                            curretPosition = ss;
+                        }
                         Text = Text.Insert(curretPosition, tt);
                         curretPosition++;
                         TextChanged?.Invoke(this);
                     }
-
                 }
-
             }
         }
 

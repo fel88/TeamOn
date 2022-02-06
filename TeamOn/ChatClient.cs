@@ -88,7 +88,6 @@ namespace TeamOn
 
         internal void SendMsg(string txt, string target)
         {
-
             var bt = Encoding.UTF8.GetBytes(txt);
 
             var bs64 = Convert.ToBase64String(bt);
@@ -98,8 +97,18 @@ namespace TeamOn
             wr.Flush();
         }
 
+        internal void SendTyping(string target)
+        {                        
+            
+            var wr = new StreamWriter(clientStream);
+
+            wr.WriteLine("TYPING=;" + target);
+            wr.Flush();
+        }
+
         public Action OnClientsListUpdate;
         public Action<string, string> OnMsgRecieved;
+        public Action<string> OnTyping;
         public Action<string, string, long> OnFileRecieved;
         public Action<string, string, int, int, long> OnFileChunkRecieved;
         public Action<string> OnError;
@@ -167,6 +176,18 @@ namespace TeamOn
                                 OnMsgRecieved?.Invoke(user, str);
 
 
+                            }
+                            if (ln.StartsWith("TYPING"))
+                            {
+                                ln = ln.Substring(7);
+                                var bs64 = Convert.FromBase64String(ln);
+
+                                var str = Encoding.UTF8.GetString(bs64);
+                                var doc = XDocument.Parse(str);
+                                var msg = doc.Descendants("message").First();                                
+                                var user = msg.Attribute("user").Value;
+
+                                OnTyping?.Invoke(user);
                             }
                             if (ln.StartsWith("ACK"))//file download acknowledge delivery
                             {

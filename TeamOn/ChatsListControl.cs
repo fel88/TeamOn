@@ -29,11 +29,15 @@ namespace TeamOn
                 }
                 ctx.Graphics.DrawRectangle(new Pen(Color.LightBlue, 1), bound.X, yy, bound.Width, chatHeight);
                 ctx.Graphics.DrawString(item.Name, SystemFonts.DefaultFont, Brushes.Blue, 5, yy + 6);
+                if (item is OnePersonChatItem op)
+                {
+                        ctx.Graphics.FillEllipse(op.Person.Online ? Brushes.Green : Brushes.Orange, bound.Right - 20, yy + 3, 10, 10);                    
+                        ctx.Graphics.DrawEllipse(Pens.Black, bound.Right - 20, yy + 3, 10, 10);                    
+                }
                 if (item.NewMessagesCounter > 0)
                 {
-                    ctx.Graphics.FillEllipse(Brushes.Green, bound.Right - 20, yy + 3, 15, 15);
+                    ctx.Graphics.DrawString($"({item.NewMessagesCounter})", SystemFonts.DefaultFont, Brushes.Red, bound.Right - 50, yy + 3);
                 }
-
                 yy += chatHeight;
             }
         }

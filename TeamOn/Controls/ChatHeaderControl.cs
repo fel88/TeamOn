@@ -1,4 +1,5 @@
-﻿using System.Drawing;
+﻿using System;
+using System.Drawing;
 
 namespace TeamOn.Controls
 {
@@ -21,6 +22,8 @@ namespace TeamOn.Controls
 
         UIButton connectButton;
 
+        int animationDotsNum = 0;
+        int animationCounter = 0;
         public override void Draw(DrawingContext ctx)
         {
             Visible = ChatMessageAreaControl.CurrentChat != null;
@@ -30,7 +33,24 @@ namespace TeamOn.Controls
             if (ChatMessageAreaControl.CurrentChat != null)
             {
                 ctx.Graphics.DrawString(ChatMessageAreaControl.CurrentChat.Name, new Font("Arial", 18, FontStyle.Bold), Brushes.White, bound.X + 5, bound.Y + 5);
-
+                if (ChatMessageAreaControl.CurrentChat is OnePersonChatItem op)
+                {
+                    if (DateTime.Now.Subtract(op.LastTyping).TotalSeconds < 2)
+                    {
+                        ctx.Graphics.DrawString("typing text ", new Font("Arial",10), Brushes.White, bound.X, bound.Bottom - 20);
+                        for (int i = 0; i < animationDotsNum; i++)
+                        {
+                            ctx.Graphics.FillEllipse(Brushes.White, bound.X + 100+i*20, bound.Bottom - 15, 10, 10);
+                        }
+                        animationCounter++;
+                        if (animationCounter > 10)
+                        {
+                            animationDotsNum++;
+                            animationDotsNum %= 4;
+                            animationCounter = 0;
+                        }
+                    }
+                }
                 if (!(ChatMessageAreaControl.CurrentChat is GroupChatItem))
                     connectButton.Draw(ctx);
             }

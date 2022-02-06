@@ -1,8 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Windows.Forms;
 
 namespace TeamOn.Controls
 {
@@ -48,10 +51,19 @@ namespace TeamOn.Controls
                 }
             }
 
+            foreach (var item in regions)
+            {
+                if (item.Rect.Contains(ctx.GetCursor()))
+                {
+                    ctx.SetTempCursor(Cursors.Hand);
+                }
+            }
+
             int gap = 5;
             int leftGap = 50;
             int currentY = bound.Bottom - gap * 2;
             if (ChatMessageAreaControl.CurrentChat != null)
+            {
                 for (int i = CurrentChat.Messages.Count - 1; i >= 0; i--)
                 {
                     var msg = CurrentChat.Messages[i];
@@ -70,7 +82,10 @@ namespace TeamOn.Controls
                             var rect2 = new RectangleF(rect.X, rect.Y, rect.Width, rect.Height);
                             rect2.Inflate(5, 5);
                             ctx.Graphics.FillRectangle(Brushes.White, rect2);
-                            ctx.Graphics.DrawString(tcm.Text, SystemFonts.DefaultFont, Brushes.Black, rect);
+
+                            CheckAndDrawTextBlock(msg, tcm.Text, rect, ctx);
+
+
                             ctx.Graphics.DrawString(tcm.Owner.Name, SystemFonts.DefaultFont, Brushes.Black, bound.X + 2, currentY - ms.Height);
 
                             currentY -= gap * 3 + (int)ms.Height;
@@ -81,7 +96,8 @@ namespace TeamOn.Controls
                             var rect2 = new RectangleF(rect.X, rect.Y, rect.Width, rect.Height);
                             rect2.Inflate(5, 5);
                             ctx.Graphics.FillRectangle(Brushes.White, rect2);
-                            ctx.Graphics.DrawString(tcm.Text, SystemFonts.DefaultFont, Brushes.Black, rect);
+
+                            CheckAndDrawTextBlock(msg, tcm.Text, rect, ctx);
                             ctx.Graphics.DrawString(tcm.Owner.Name, SystemFonts.DefaultFont, Brushes.Black, bound.Right - leftGap, currentY - ms.Height);
 
                             currentY -= gap * 3 + (int)ms.Height;
@@ -92,6 +108,8 @@ namespace TeamOn.Controls
                 }
 
 
+
+            }
             //ctx.Graphics.FillRectangle(Brushes.White, bound.X, bound.Bottom - 50, bound.Width, 50);
             var pos = ctx.GetCursor();
             /*if (new Rectangle(bound.X, bound.Bottom - 50, bound.Width, 50).Contains(pos))
@@ -106,9 +124,54 @@ namespace TeamOn.Controls
             //ctx.Graphics.FillRectangle(Brushes.DarkGoldenrod, bound.Value);
         }
 
+        private void CheckAndDrawTextBlock(ChatMessage c, string text, RectangleF rect, DrawingContext ctx)
+        {
+            Uri outUri;
+
+            if (Uri.TryCreate(text, UriKind.Absolute, out outUri)
+               && (outUri.Scheme == Uri.UriSchemeHttp || outUri.Scheme == Uri.UriSchemeHttps))
+            {
+                var fr = regions.FirstOrDefault(z => z.Owner == c);
+                if (fr == null)
+                {
+                    regions.Add(new TextSpecificRegion() { Owner = c });
+                    fr = regions.Last();
+                }
+
+                fr.Rect = rect;
+                ctx.Graphics.DrawString(text, SystemFonts.DefaultFont, Brushes.Blue, rect);
+                ctx.Graphics.DrawLine(Pens.Blue, rect.X, rect.Bottom - 1, rect.Right, rect.Bottom - 1);
+            }
+            else
+            {
+                ctx.Graphics.DrawString(text, SystemFonts.DefaultFont, Brushes.Black, rect);
+            }
+        }
+
         public override void Event(UIEvent ev)
         {
+            if (ev is UIMouseButtonDown md)
+            {
+                foreach (var item in regions)
+                {
+                    if (item.Rect.Contains(md.Position))
+                    {
+                        if (item.Owner is TextChatMessage tcm)
+                        {
+                            Process.Start(tcm.Text);
+                        }
+                        break;
+                    }
+                }
+            }
 
         }
+        List<TextSpecificRegion> regions = new List<TextSpecificRegion>();
+    }
+
+    public class TextSpecificRegion
+    {
+        public ChatMessage Owner;
+        public RectangleF Rect;
     }
 }
