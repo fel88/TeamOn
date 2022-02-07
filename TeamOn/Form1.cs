@@ -27,9 +27,10 @@ namespace TeamOn
             ctx.Graphics = Graphics.FromImage(bmp);
             ctx.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
             ctx.PictureBox = pictureBox1;
-            Elements.Add(new CloseButton(this) { Rect = new Rectangle(Width - headerHeight - 1, 0, headerHeight, headerHeight - 1) });
-            Elements.Add(new MinimizeButton(this) { Rect = new Rectangle(Width - headerHeight * 2 - 1, 0, headerHeight, headerHeight - 1) });
-            Elements.Add(new SettingsButton(this) { Rect = new Rectangle(headerHeight, 0, headerHeight, headerHeight - 1) });
+            Elements.Add(new CloseButton(this) { AbsoluteRectPosition = true, Rect = new Rectangle(Width - headerHeight - 1, 0, headerHeight, headerHeight - 1) });
+            Elements.Add(new MinimizeButton(this) { AbsoluteRectPosition = true, Rect = new Rectangle(Width - headerHeight * 2 - 1, 0, headerHeight, headerHeight - 1) });
+            Elements.Add(new SettingsButton(this) { AbsoluteRectPosition = true, Rect = new Rectangle(headerHeight, 0, headerHeight, headerHeight - 1) });
+            Elements.Add(new NewGroupButton(this) { AbsoluteRectPosition = true, Rect = new Rectangle(headerHeight * 2, 0, headerHeight, headerHeight - 1) });
 
             //TopMost = true;
 
@@ -38,7 +39,7 @@ namespace TeamOn
             notifyIcon1.Icon = TeamOn.Properties.Resources.smiley_mr_green;
             Icon = TeamOn.Properties.Resources.smiley_mr_green;
 
-            root = new RootElement();
+            root = new RootElement(this);
             root.Rect = new Rectangle(0, headerHeight, Width, Height - headerHeight);
 
             mainPanel = new TwoColumnPanel() { Rect = new Rectangle(0, headerHeight, Width, Height - headerHeight), Parent = root };
@@ -80,9 +81,28 @@ namespace TeamOn
             ChatMessageAreaControl.CurrentUser = new UserInfo() { Name = Settings.Nickname };
             MouseWheel += Form1_MouseWheel;
             settings = new SettingsControl() { Parent = mainPanel };
+            groupEdit = new GroupEditControl() { Parent = mainPanel };
             connectStart();
             Load += Form1_Load;
 
+        }
+
+        Stack<UIPanel> stack = new Stack<UIPanel>();
+
+        public void BackToControl()
+        {
+            if (stack.Any())
+            {
+                var p = stack.Pop();
+                mainPanel.Elements[1] = p;
+            }
+        }
+
+        internal void SwitchLayoutToControl(UIPanel panel)
+        {
+            stack.Push(mainPanel.Elements[1] as UIPanel);
+            panel.Parent = mainPanel;
+            mainPanel.Elements[1] = panel;
         }
 
         private void PictureBox1_DragDrop(object sender, DragEventArgs e)
@@ -91,12 +111,14 @@ namespace TeamOn
             if (dt != null)
             {
                 var dt2 = dt as string[];
+                bool good = false;
                 foreach (var item in dt2)
                 {
                     try
                     {
                         var bmp = Bitmap.FromFile(item) as Bitmap;
                         ChatTextBoxControl.Instance.BitmapContent = bmp;
+                        good = true;
                         break;
                     }
                     catch (Exception ex)
@@ -104,10 +126,13 @@ namespace TeamOn
 
                     }
                 }
+                if (!good)
+                {
+                    ChatTextBoxControl.Instance.AttachedFiles = dt2;
+                }
             }
             else
             {
-
                 var bmp = (Bitmap)e.Data.GetData(DataFormats.Bitmap);
             }
 
@@ -143,15 +168,36 @@ namespace TeamOn
         MessageFilter mf = null;
         ChatControl chatControl;
         SettingsControl settings;
+        GroupEditControl groupEdit;
+
+        public void SwitchToChat()
+        {
+            mainPanel.Elements[1] = chatControl;
+
+        }
+
         public void SwitchLayoutSettings()
         {
-            if (mainPanel.Elements[1] == chatControl)
+            if (mainPanel.Elements[1] != settings)
             {
                 mainPanel.Elements[1] = settings;
             }
             else
             {
                 Settings.SaveSettings();
+                mainPanel.Elements[1] = chatControl;
+            }
+        }
+
+        public void SwitchLayoutGroupEdit(GroupChatItem group = null)
+        {
+            if (mainPanel.Elements[1] != groupEdit)
+            {
+                mainPanel.Elements[1] = groupEdit;
+                groupEdit.Init(group);
+            }
+            else
+            {
                 mainPanel.Elements[1] = chatControl;
             }
         }
@@ -304,6 +350,18 @@ namespace TeamOn
                     if (fr != null)
                     {
                         fr.Person.Online = true;
+                        fr.AddMessage(new TextChatMessage(DateTime.Now, str) { Owner = ChatClient.Instance.Users.First(z => z.Name == user) });
+                    }
+                }));
+
+            };
+            client.OnGroupMsgRecieved = (user, group, str) =>
+            {
+                Invoke((Action)(() =>
+                {
+                    var fr = ChatsListControl.Chats.OfType<GroupChatItem>().FirstOrDefault(z => z.Name == group);
+                    if (fr != null)
+                    {                        
                         fr.AddMessage(new TextChatMessage(DateTime.Now, str) { Owner = ChatClient.Instance.Users.First(z => z.Name == user) });
                     }
                 }));
@@ -636,7 +694,7 @@ namespace TeamOn
             Elements[0].Rect = new Rectangle(Width - headerHeight - 1, 0, headerHeight, headerHeight - 1);
             Elements[1].Rect = new Rectangle(Width - headerHeight * 2 - 1, 0, headerHeight, headerHeight - 1);
             mainPanel.Rect = new Rectangle(0, headerHeight, Width, Height - headerHeight);
-            root.Rect = mainPanel.Rect;
+            root.Rect = new Rectangle(0, headerHeight, Width, Height - headerHeight);
 
         }
 

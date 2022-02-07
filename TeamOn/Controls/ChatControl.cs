@@ -21,8 +21,7 @@ namespace TeamOn.Controls
             Elements.Add(new ChatHeaderControl() { Parent = this });
             Elements.Add(new ChatMessageAreaControl() { Parent = this, Visible = true });
             Elements.Add(new ChatTextBoxControl() { Parent = this, Visible = true });
-            Elements.Add(new Panel() { Parent = this, BackColor = Color.LightBlue });
-
+            Elements.Add(new UIPanel() { Parent = this, BackColor = Color.LightBlue });
         }
     }
 }

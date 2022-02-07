@@ -16,9 +16,28 @@ namespace TeamOnServer
         static void Main(string[] args)
         {
             int port = 8888;
+            LoadConfig();
             var server = new ChatServer();
             server.Init(port);
             server.th.Join();
+        }
+
+        private static void LoadConfig()
+        {
+            if (!File.Exists("config.xml")) return;
+            var doc = XDocument.Load("config.xml");
+            foreach (var item in doc.Descendants("group"))
+            {
+                var gi = new GroupInfo();
+                TcpRoutine.Groups.Add(gi);
+                var nm = item.Attribute("name").Value;
+                var owner = item.Attribute("owner").Value;
+                foreach (var user in item.Elements("user"))
+                {
+                    var un = user.Attribute("name").Value;
+                    gi.Users.Add(new UserInfo() { Name = un });
+                }
+            }
         }
     }
 
@@ -50,12 +69,21 @@ namespace TeamOnServer
                     {
                         var ind = line.IndexOf("=");
                         var msg = line.Substring(ind + 1);
+                        if (string.IsNullOrWhiteSpace(msg))
+                        {
+                            Console.ForegroundColor = ConsoleColor.Red;
+                            Console.WriteLine("[init] reject empty user name ");
+                            Console.ForegroundColor = ConsoleColor.White;
+                            //reject connection
+                            stream.Close();
+                            break;
+                        }
                         uinfo.Name = msg;
 
                         if (streams.Where(z => z.Tag != uinfo).Select(z => z.Tag as UserInfo).Any(z => z.Name == msg))
                         {
                             Console.ForegroundColor = ConsoleColor.Red;
-                            Console.WriteLine("reject user init = " + msg);
+                            Console.WriteLine("[init] reject duplicate user name = " + msg);
                             Console.ForegroundColor = ConsoleColor.White;
                             //reject connection
                             stream.Close();
@@ -96,6 +124,97 @@ namespace TeamOnServer
 
                         this.SendTo("MSG=" + ree, target);
                     }
+                    else if (line.StartsWith("GINFO"))
+                    {
+
+                        var ind = line.IndexOf("=");
+                        var msg = line.Substring(ind + 1);
+
+                        var bs64 = Convert.FromBase64String(msg);
+                        var str = Encoding.UTF8.GetString(bs64);
+                        var doc = XDocument.Parse(str);
+                        var root = doc.Element("root");
+                        var gnm = root.Attribute("name").Value;
+
+                        if (!Groups.Any(z => z.Name == gnm))
+                        {
+                            var gi = new GroupInfo() { Name = gnm, Owner = uinfo };
+                            Groups.Add(gi);
+
+                            //skip
+                        }
+
+                        var cgrp = Groups.First(z => z.Name == gnm);
+                        if (cgrp.Owner.Name == uinfo.Name)
+                        {
+                            List<string> all = new List<string>();
+                            all.Add(uinfo.Name);
+                            foreach (var item in root.Elements("user"))
+                            {
+                                var un = item.Attribute("name").Value;
+                                all.Add(un);
+                                if (!cgrp.Users.Any(z => z.Name == un))
+                                {
+                                    cgrp.Users.Add(new UserInfo() { Name = un });
+                                }
+                            }
+                            if (!cgrp.Users.Any(z => z.Name == uinfo.Name))
+                            {
+                                cgrp.Users.Add(uinfo);
+                            }
+                            var toDel = cgrp.Users.Where(z => !all.Contains(z.Name)).ToArray();
+                            var cnt = cgrp.Users.RemoveAll(z => toDel.Any(u => u.Name == z.Name));
+
+                            StringBuilder sb = new StringBuilder();
+                            sb.AppendLine("<?xml version=\"1.0\"?>");
+                            sb.AppendLine("<root>");
+                            sb.AppendLine($"<group owner=\"{uinfo.Name}\" name=\"{cgrp.Name}\" >");
+                            foreach (var item in cgrp.Users)
+                            {
+                                sb.AppendLine($"<user name=\"{item.Name}\"/>");
+                            }
+                            sb.AppendLine(string.Format("</group>"));
+                            sb.AppendLine("</root>");
+
+                            var estr = sb.ToString();
+
+
+                            var bt = Encoding.UTF8.GetBytes(estr);
+
+                            var ree = Convert.ToBase64String(bt);
+
+                            this.SendTo("GINFO=" + ree, cgrp.Users.Where(z => z.Name != uinfo.Name).Select(z => z.Name).ToArray());
+                        }
+                    }
+                    else if (line.StartsWith("GMSG"))
+                    {
+
+                        var ind = line.IndexOf("=");
+                        var msg = line.Substring(ind + 1);
+                        var spl = msg.Split(';').ToArray();
+                        var target = spl[1];
+
+                        var bs64 = Convert.FromBase64String(spl[0]);
+                        var str = Encoding.UTF8.GetString(bs64);
+
+                        var cgrp = Groups.First(z => z.Name == target);
+                        StringBuilder sb = new StringBuilder();
+                        sb.AppendLine("<?xml version=\"1.0\"?>");
+                        sb.AppendLine("<root>");
+                        sb.AppendLine($"<message user=\"{uinfo.Name}\" group=\"{cgrp.Name}\">");
+                        sb.AppendFormat("<![CDATA[{0}]]>", str);
+                        sb.AppendLine(string.Format("</message>", uinfo.Name, str));
+                        sb.AppendLine("</root>");
+
+                        var estr = sb.ToString();
+
+
+                        var bt = Encoding.UTF8.GetBytes(estr);
+                        var ree = Convert.ToBase64String(bt);
+
+                        this.SendTo("GMSG=" + ree, cgrp.Users.Where(z => z.Name != uinfo.Name).Select(z => z.Name).ToArray());
+
+                    }
                     else if (line.StartsWith("TYPING"))
                     {
 
@@ -107,7 +226,7 @@ namespace TeamOnServer
                         StringBuilder sb = new StringBuilder();
                         sb.AppendLine("<?xml version=\"1.0\"?>");
                         sb.AppendLine("<root>");
-                        sb.AppendLine(string.Format("<message user=\"{0}\" target=\"{1}\">", uinfo.Name, target));                        
+                        sb.AppendLine(string.Format("<message user=\"{0}\" target=\"{1}\">", uinfo.Name, target));
                         sb.AppendLine("</message>");
                         sb.AppendLine("</root>");
 
@@ -163,7 +282,7 @@ namespace TeamOnServer
 
                         //server.SendAll(line);
                     }
-                    
+
 
 
                 }
@@ -272,10 +391,15 @@ namespace TeamOnServer
         }
         public void SendTo(string ln, string target)
         {
+            SendTo(ln, new string[] { target });
+        }
+        public void SendTo(string ln, string[] targets)
+        {
             List<ConnectionInfo> infos = new List<ConnectionInfo>();
             foreach (var connectionInfo in streams)
             {
-                if ((connectionInfo.Tag as UserInfo).Name != target) continue;
+                var nm = (connectionInfo.Tag as UserInfo).Name;
+                if (!targets.Contains(nm)) continue;
                 try
                 {
                     StreamWriter wrt = new StreamWriter(connectionInfo.Stream);
@@ -303,6 +427,8 @@ namespace TeamOnServer
         {
 
         }
+
+        public static List<GroupInfo> Groups = new List<GroupInfo>();
 
         public Thread th;
         public void InitTcp(IPAddress ip, int port, Action<NetworkStream, object> threadProcessor, Func<object> factory = null)
@@ -355,5 +481,13 @@ namespace TeamOnServer
     public class UserInfo
     {
         public string Name;
+        public byte[] PublicKey;
+    }
+
+    public class GroupInfo
+    {
+        public List<UserInfo> Users = new List<UserInfo>();
+        public string Name;
+        public UserInfo Owner;
     }
 }

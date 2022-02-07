@@ -4,7 +4,7 @@ using TeamOn.Controls;
 
 namespace TeamOn
 {
-    public class SettingsControl : Controls.Panel
+    public class SettingsControl : UIPanel
     {
         public SettingsControl()
         {
@@ -75,7 +75,7 @@ namespace TeamOn
             var bound = Parent.GetRectangleOfChild(this).Value;
             if (elem == allowConnect)
             {
-                return new Rectangle(bound.X + 20, bound.Y + 20, 100, 20);
+                return new Rectangle(bound.X + 20, bound.Y + 20, 20, 20);
             }
             if (elem == nickNameTextBox)
             {

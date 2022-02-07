@@ -13,17 +13,17 @@ namespace TeamOn
 
         public override void Draw(DrawingContext ctx)
         {
-            var bound = Parent.GetRectangleOfChild(this).Value;
+            var bound = GetBound();
             int gap = 3;
-            Rect = new Rectangle(bound.X, bound.Y, 20, 20);
+            var rect = new Rectangle(bound.X, bound.Y, 20, 20);
             var cursor = ctx.GetCursor();
             //if (Rect.Contains(cursor))
             {
-                ctx.Graphics.FillRectangle(Brushes.AliceBlue, Rect);
+                ctx.Graphics.FillRectangle(Brushes.AliceBlue, rect);
                 if (Checked)
                 {
-                    ctx.Graphics.DrawLine(new Pen(Color.Red, 3), Rect.X + gap, Rect.Y + gap, Rect.Right - gap, Rect.Bottom - gap);
-                    ctx.Graphics.DrawLine(new Pen(Color.Red, 3), Rect.X + gap, Rect.Bottom - gap, Rect.Right - gap, Rect.Top + gap);
+                    ctx.Graphics.DrawLine(new Pen(Color.Red, 3), rect.X + gap, rect.Y + gap, rect.Right - gap, rect.Bottom - gap);
+                    ctx.Graphics.DrawLine(new Pen(Color.Red, 3), rect.X + gap, rect.Bottom - gap, rect.Right - gap, rect.Top + gap);
                 }
             }
          //   else
@@ -34,8 +34,8 @@ namespace TeamOn
                     ctx.Graphics.DrawLine(new Pen(Color.LightGray, 3), Rect.X + gap, Rect.Bottom - gap, Rect.Right - gap, Rect.Top + gap);
                 }*/
             }
-            ctx.Graphics.DrawRectangle(Pens.Black, Rect);
-            ctx.Graphics.DrawString(Text, SystemFonts.DefaultFont, Brushes.Blue, Rect.Right + 10, Rect.Y);
+            ctx.Graphics.DrawRectangle(Pens.Black, rect);
+            ctx.Graphics.DrawString(Text, SystemFonts.DefaultFont, Brushes.Blue, rect.Right + 10, rect.Y);
 
         }
 

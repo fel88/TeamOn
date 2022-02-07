@@ -6,8 +6,21 @@ namespace TeamOn.Controls
     public abstract class UIElement
     {
         public bool Visible = true;
-        public Panel Parent;
-        public Rectangle Rect;
+        public UIPanel Parent;
+        Rectangle _rect;
+        public Rectangle Rect
+        {
+            get
+            {
+                return AbsoluteRectPosition ? _rect : GetBound();
+            }
+            set
+            {
+                _rect = value;
+            }
+        }
+
+        public bool AbsoluteRectPosition = false;
 
         public Rectangle GetBound()
         {

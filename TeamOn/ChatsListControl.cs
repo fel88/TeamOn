@@ -31,8 +31,13 @@ namespace TeamOn
                 ctx.Graphics.DrawString(item.Name, SystemFonts.DefaultFont, Brushes.Blue, 5, yy + 6);
                 if (item is OnePersonChatItem op)
                 {
-                        ctx.Graphics.FillEllipse(op.Person.Online ? Brushes.Green : Brushes.Orange, bound.Right - 20, yy + 3, 10, 10);                    
-                        ctx.Graphics.DrawEllipse(Pens.Black, bound.Right - 20, yy + 3, 10, 10);                    
+                    ctx.Graphics.FillEllipse(op.Person.Online ? Brushes.Green : Brushes.Orange, bound.Right - 20, yy + 3, 10, 10);
+                    ctx.Graphics.DrawEllipse(Pens.Black, bound.Right - 20, yy + 3, 10, 10);
+                }
+                if (item is GroupChatItem gp)
+                {
+                    //ctx.Graphics.DrawIcon(TeamOn.Properties.Resources.pencil,bound.Right-20,yy+3);
+                    
                 }
                 if (item.NewMessagesCounter > 0)
                 {
@@ -57,6 +62,7 @@ namespace TeamOn
                     if (rect.Contains(mb.Position))
                     {
                         ChatMessageAreaControl.CurrentChat = item;
+                        RootElement.Instance.SwitchToChat();
                         item.NewMessagesCounter = 0;
                         break;
                     }

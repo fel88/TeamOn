@@ -2,7 +2,7 @@
 
 namespace TeamOn.Controls
 {
-    public class TwoColumnPanel : Panel
+    public class TwoColumnPanel : UIPanel
     {
         public bool FirstPanelFixed;
         public int FirstPanelWidth = 250;
@@ -10,9 +10,7 @@ namespace TeamOn.Controls
         {
 
             var idx = Elements.IndexOf(elem);
-
-
-
+            
             if (idx == 0)
             {
                 if (FirstPanelFixed)

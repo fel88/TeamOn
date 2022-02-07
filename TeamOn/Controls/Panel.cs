@@ -3,7 +3,7 @@ using System.Drawing;
 
 namespace TeamOn.Controls
 {
-    public class Panel : UIElement
+    public class UIPanel : UIElement
     {
         public virtual Rectangle? GetRectangleOfChild(UIElement elem)
         {
@@ -34,7 +34,7 @@ namespace TeamOn.Controls
 
         public override void Event(UIEvent ev)
         {
-            foreach (var item in Elements)
+            foreach (var item in Elements.ToArray())
             {
                 if (ev.Handled) break;
                 item.Event(ev);

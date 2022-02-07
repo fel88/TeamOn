@@ -18,7 +18,14 @@ namespace TeamOn.Controls
         public Color BackColor = Color.White;
         public Color ForeColor = Color.Black;
 
+        //string _text = string.Empty;
+        public void SetText(string str)
+        {
+            Text = str;
+            curretPosition = 0;
+        }
         public string Text = string.Empty;
+
         int blinkCounter = 0;
         int blinkPeriod = 40;
         public bool Focused { get; set; }
@@ -195,7 +202,8 @@ text.Length) };
         int endSelection;
         int selectionLegth => Math.Abs(endSelection - startSelection);
         public bool ImagePastedAllowed = false;
-        public Bitmap BitmapContent;        
+        public Bitmap BitmapContent;
+
 
         public override void Event(UIEvent ev)
         {

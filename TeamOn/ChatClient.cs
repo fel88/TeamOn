@@ -152,6 +152,42 @@ namespace TeamOn
             wr.Flush();
         }
 
+        string GetGroupXmlInfo(GroupChatItem group)
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine("<?xml version=\"1.0\"?>");
+            sb.AppendLine($"<root name=\"{group.Name}\" owner=\"{group.Owner.Name}\">");
+            foreach (var item in group.Users)
+            {
+                sb.AppendLine($"<user name=\"{item.Name}\"/>");
+            }
+            sb.AppendLine("</root>");
+            return sb.ToString();
+        }
+        internal void SendGroupMsg(string group, string txt)
+        {
+            var bt = Encoding.UTF8.GetBytes(txt);
+
+            var bs64 = Convert.ToBase64String(bt);
+            var wr = new StreamWriter(clientStream);
+
+            wr.WriteLine("GMSG=" + bs64 + ";" + group);
+            wr.Flush();
+        }
+        internal void SendGroupInfo(GroupChatItem group)
+        {
+
+            var info = GetGroupXmlInfo(group);
+            var bt = Encoding.UTF8.GetBytes(info);
+            //make xml group info?
+
+            var bs64 = Convert.ToBase64String(bt);
+            var wr = new StreamWriter(clientStream);
+
+            wr.WriteLine("GINFO=" + bs64);
+            wr.Flush();
+        }
+
         internal void SendTyping(string target)
         {
 
@@ -163,6 +199,8 @@ namespace TeamOn
 
         public Action OnClientsListUpdate;
         public Action<string, string> OnMsgRecieved;
+        public Action<string, string, string> OnGroupMsgRecieved;
+        public Action<string, string, string> OnGroupInfoRecieved;
         public Action<string> OnTyping;
         public Action<string, string, long> OnFileRecieved;
         public Action<string, string, int, int, long> OnFileChunkRecieved;
@@ -230,6 +268,50 @@ namespace TeamOn
 
                                 OnMsgRecieved?.Invoke(user, str);
 
+
+                            }
+                            if (ln.StartsWith("GMSG"))
+                            {
+                                ln = ln.Substring(5);
+                                var bs64 = Convert.FromBase64String(ln);
+
+                                var str = Encoding.UTF8.GetString(bs64);
+                                var doc = XDocument.Parse(str);
+                                var msg = doc.Descendants("message").First();
+                                str = msg.Value;
+                                var user = msg.Attribute("user").Value;
+                                var group = msg.Attribute("group").Value;
+
+                                OnGroupMsgRecieved?.Invoke(user, group, str);
+
+
+                            }
+                            if (ln.StartsWith("GINFO"))
+                            {
+                                ln = ln.Substring(6);
+                                var bs64 = Convert.FromBase64String(ln);
+
+                                var str = Encoding.UTF8.GetString(bs64);
+                                var doc = XDocument.Parse(str);
+                                var msg = doc.Descendants("group").First();
+                                str = msg.Value;
+                                var user = msg.Attribute("owner").Value;
+                                var group = msg.Attribute("name").Value;
+
+                                var gr = ChatsListControl.Chats.OfType<GroupChatItem>().FirstOrDefault(z => z.Name == group);
+                                if (gr == null)
+                                {
+                                    gr = new GroupChatItem() { Name = group, Owner = new UserInfo() { Name = user } };
+                                    ChatsListControl.Chats.Add(gr);
+                                }
+                                gr.Users.Clear();
+                                foreach (var _user in msg.Elements("user"))
+                                {
+                                    var vnm = _user.Attribute("name").Value;
+                                    gr.Users.Add(new UserInfo() { Name = vnm });
+                                }
+
+                                OnGroupInfoRecieved?.Invoke(user, group, str);
 
                             }
                             if (ln.StartsWith("TYPING"))

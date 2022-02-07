@@ -5,9 +5,8 @@ using System.Windows.Forms;
 
 namespace TeamOn.Controls
 {
-    public class RowsPanel : Panel
+    public class RowsPanel : UIPanel
     {
-
         public override Rectangle? GetRectangleOfChild(UIElement elem)
         {
             var bound = Parent.GetRectangleOfChild(this).Value;

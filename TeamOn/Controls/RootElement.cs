@@ -1,15 +1,19 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 
 namespace TeamOn.Controls
 {
-    public class RootElement : Panel
+    public class RootElement : UIPanel
     {
-        public RootElement()
+        public RootElement(Form1 form)
         {
+            AbsoluteRectPosition = true;
             Instance = this;
+            ownerForm = form;
         }
 
+        Form1 ownerForm;
 
         public void CaptureFocus(IFocusContainer f)
         {
@@ -35,6 +39,23 @@ namespace TeamOn.Controls
         public override Rectangle? GetRectangleOfChild(UIElement elem)
         {
             return Rect;
+        }
+
+        internal void SwitchToChat()
+        {
+            ownerForm.SwitchToChat();
+        }
+        internal void BackToControl()
+        {
+            ownerForm.BackToControl();
+        }
+        internal void SwitchToGroupEdit(GroupChatItem group)
+        {
+            ownerForm.SwitchLayoutGroupEdit(group);
+        }
+        internal void SwitchToControl(UIPanel panel)
+        {
+            ownerForm.SwitchLayoutToControl(panel);
         }
     }
 }

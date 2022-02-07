@@ -19,9 +19,16 @@ namespace TeamOn
                 var client = ChatClient.Instance;
                 ChatMessageAreaControl.CurrentChat.NewMessagesCounter = 0;
                 if (!(client == null || !client.Connected))
-                    client.SendTyping((ChatMessageAreaControl.CurrentChat as OnePersonChatItem).Person.Name);
+                {
+                    if ((ChatMessageAreaControl.CurrentChat is OnePersonChatItem))
+                    {
+                        client.SendTyping((ChatMessageAreaControl.CurrentChat as OnePersonChatItem).Person.Name);
+                    }
+                }
             };
         }
+
+        public string[] AttachedFiles;
 
         public static ChatTextBoxControl Instance;
         public override void Draw(DrawingContext ctx)
@@ -72,7 +79,15 @@ namespace TeamOn
                         //var cc = FindParent<ChatControl>() as ChatControl;
                         //var ma = cc.Elements[1] as ChatMessageAreaControl;
 
-                        client.SendMsg(Text, (ChatMessageAreaControl.CurrentChat as OnePersonChatItem).Person.Name);
+                        if (ChatMessageAreaControl.CurrentChat is OnePersonChatItem op)
+                        {
+                            client.SendMsg(Text, op.Person.Name);
+                        }
+                        else if (ChatMessageAreaControl.CurrentChat is GroupChatItem gc)
+                        {
+                            client.SendGroupInfo(gc);
+                            client.SendGroupMsg(gc.Name, Text);
+                        }
                         ChatMessageAreaControl.CurrentChat.AddMessage(new TextChatMessage(DateTime.Now, Text) { Owner = ChatMessageAreaControl.CurrentUser });
 
 

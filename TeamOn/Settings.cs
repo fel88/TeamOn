@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Text;
 using System.Xml.Linq;
 
@@ -6,7 +7,7 @@ namespace TeamOn
 {
     public static class Settings
     {
-        public static string Nickname;
+        public static string Nickname = Environment.UserName;
         public static string ServerIP = "127.0.0.1";
         public static int ServerPort = 8888;
         public static void LoadSettings()
