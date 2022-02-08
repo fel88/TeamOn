@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -18,6 +19,9 @@ namespace TeamOn
         {
             InitializeComponent();
 
+            client = new ChatClient();
+
+            FormClosing += Form1_FormClosing;
             pictureBox1.AllowDrop = true;
             pictureBox1.DragEnter += PictureBox1_DragEnter;
             pictureBox1.DragDrop += PictureBox1_DragDrop;
@@ -84,7 +88,179 @@ namespace TeamOn
             groupEdit = new GroupEditControl() { Parent = mainPanel };
             connectStart();
             Load += Form1_Load;
+            if (Settings.PermanentChats)
+            {
+                LoadChats();
+            }
+        }
 
+        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            if (Settings.PermanentChats)
+            {
+                //save all chats
+                SaveChats();
+            }
+        }
+        public void LoadChats()
+        {
+            if (!File.Exists("chats.xml")) return;
+
+            var doc = XDocument.Load("chats.xml");
+            var root = doc.Descendants("root").First();
+            foreach (var item in root.Element("users").Elements("user"))
+            {
+                var uid = int.Parse(item.Attribute("id").Value);
+                var nameid = item.Attribute("name").Value;
+                if (!ChatClient.Instance.Users.Any(z => z.Name == nameid))
+                {
+                    ChatClient.Instance.Users.Add(new UserInfo() { Id = uid, Name = nameid });
+                }
+            }
+
+            foreach (var chat in root.Elements("chat"))
+            {
+                var type = chat.Attribute("type").Value;
+                ChatItem _chat = null;
+                if (type == "simple")
+                {
+                    _chat = new OnePersonChatItem();
+                    var person = chat.Attribute("person").Value;
+                    _chat.Name = person;
+                    (_chat as OnePersonChatItem).Person = ChatClient.Instance.Users.First(z => z.Name == person);
+                }
+                if (type == "group")
+                {
+                    _chat = new GroupChatItem();
+                    var name = chat.Attribute("name").Value;
+                    var owner = chat.Attribute("owner").Value;
+                    if (ChatMessageAreaControl.CurrentUser.Name == owner)
+                    {
+                        (_chat as GroupChatItem).Owner = ChatMessageAreaControl.CurrentUser;
+                    }
+                    else
+                    {
+                        (_chat as GroupChatItem).Owner = ChatClient.Instance.Users.First(z => z.Name == owner);
+                    }
+                    foreach (var uitem in chat.Descendants("user"))
+                    {
+                        var unm = uitem.Attribute("name").Value;
+                        UserInfo ur = ChatClient.Instance.Users.FirstOrDefault(z => z.Name == unm);
+                        if(ur==null && unm == ChatMessageAreaControl.CurrentUser.Name)
+                        {
+                            ur = ChatMessageAreaControl.CurrentUser;
+                        }
+                        (_chat as GroupChatItem).Users.Add(ur);
+                    }
+
+                    _chat.Name = name;
+                }
+                ChatsListControl.Chats.Add(_chat);
+                foreach (var msg in chat.Descendants("message"))
+                {
+                    var mtype = msg.Attribute("type").Value;
+                    if (mtype == "text")
+                    {
+                        var dt = DateTime.Parse(msg.Attribute("stamp").Value);
+                        var owner = msg.Attribute("owner").Value;
+                        if (ChatMessageAreaControl.CurrentUser.Name == owner)
+                        {
+                            _chat.Messages.Add(new TextChatMessage(dt, msg.Value) { Owner = ChatMessageAreaControl.CurrentUser });
+                        }
+                        else
+                        {
+                            _chat.Messages.Add(new TextChatMessage(dt, msg.Value) { Owner = ChatClient.Instance.Users.First(z => z.Name == owner) });
+                        }
+
+                    }
+                    if (mtype == "image_link")
+                    {
+                        var path = msg.Value;
+                        var dt = DateTime.Parse(msg.Attribute("stamp").Value);
+                        var owner = msg.Attribute("owner").Value;
+
+                        if (ChatMessageAreaControl.CurrentUser.Name == owner)
+                        {
+                            _chat.Messages.Add(new ImageLinkChatMessage() { DateTime = dt, Path = path, Owner = ChatMessageAreaControl.CurrentUser });
+                        }
+                        else
+                        {
+                            _chat.Messages.Add(new ImageLinkChatMessage() { DateTime = dt, Path = path, Owner = ChatClient.Instance.Users.First(z => z.Name == owner) });
+                        }
+                    }
+                }
+            }
+        }
+
+        public void SaveChats()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine("<?xml version=\"1.0\"?>");
+            sb.AppendLine("<root>");
+            sb.AppendLine("<users>");
+            foreach (var item in ChatsListControl.Chats.OfType<OnePersonChatItem>())
+            {
+                sb.AppendLine($"<user id=\"{item.Person.Id}\" name=\"{item.Person.Name}\"/>");
+            }
+            sb.AppendLine("</users>");
+            foreach (var item in ChatsListControl.Chats)
+            {
+                if (item is OnePersonChatItem op)
+                {
+
+                    sb.AppendLine($"<chat type=\"simple\" person=\"{op.Person.Name}\">");
+                    sb.AppendLine("<messages>");
+                    foreach (var msg in item.Messages)
+                    {
+                        if (msg is TextChatMessage tcm)
+                        {
+                            sb.AppendLine($"<message type=\"text\" stamp=\"{tcm.DateTime}\" owner=\"{tcm.Owner.Name}\">");
+                            sb.AppendLine($"<![CDATA[{tcm.Text}]]>");
+                            sb.AppendLine("</message>");
+                        }
+                        if (msg is ImageLinkChatMessage ilcm)
+                        {
+                            sb.AppendLine($"<message type=\"image_link\" stamp=\"{ilcm.DateTime}\" owner=\"{ilcm.Owner.Name}\">");
+                            sb.AppendLine($"<![CDATA[{ilcm.Path}]]>");
+                            sb.AppendLine("</message>");
+                        }
+
+                    }
+                    sb.AppendLine("</messages>");
+                    sb.AppendLine("</chat>");
+                }
+                if (item is GroupChatItem gc)
+                {
+                    sb.AppendLine($"<chat type=\"group\" name=\"{gc.Name}\" owner=\"{gc.Owner.Name}\">");
+                    sb.AppendLine("<users>");
+                    foreach (var user in gc.Users)
+                    {
+                        sb.AppendLine($"<user name=\"{user.Name}\" id=\"{user.Id}\"/>");
+                    }
+                    sb.AppendLine("</users>");
+                    sb.AppendLine("<messages>");
+                    foreach (var msg in item.Messages)
+                    {
+                        if (msg is TextChatMessage tcm)
+                        {
+                            sb.AppendLine($"<message type=\"text\" stamp=\"{tcm.DateTime}\" owner=\"{tcm.Owner.Name}\">");
+                            sb.AppendLine($"<![CDATA[{tcm.Text}]]>");
+                            sb.AppendLine("</message>");
+                        }
+                        if (msg is ImageLinkChatMessage ilcm)
+                        {
+                            sb.AppendLine($"<message type=\"image_link\" stamp=\"{ilcm.DateTime}\" owner=\"{ilcm.Owner.Name}\">");
+                            sb.AppendLine($"<![CDATA[{ilcm.Path}]]>");
+                            sb.AppendLine("</message>");
+                        }
+
+                    }
+                    sb.AppendLine("</messages>");
+                    sb.AppendLine("</chat>");
+                }
+            }
+            sb.AppendLine("</root>");
+            File.WriteAllText("chats.xml", sb.ToString());
         }
 
         Stack<UIPanel> stack = new Stack<UIPanel>();
@@ -223,9 +399,6 @@ namespace TeamOn
         RootElement root;
 
 
-
-
-
         private void connectStart()
         {
             Thread th = new Thread(() =>
@@ -289,7 +462,7 @@ namespace TeamOn
         ChatClient client;
         void connect(string ipAddr, int port)
         {
-            client = new ChatClient();
+
             //client.Nickname = textBox3.Text;
             client.OnClientsListUpdate = UpdateClientsList;
             client.OnError = (msg) =>
@@ -361,7 +534,7 @@ namespace TeamOn
                 {
                     var fr = ChatsListControl.Chats.OfType<GroupChatItem>().FirstOrDefault(z => z.Name == group);
                     if (fr != null)
-                    {                        
+                    {
                         fr.AddMessage(new TextChatMessage(DateTime.Now, str) { Owner = ChatClient.Instance.Users.First(z => z.Name == user) });
                     }
                 }));

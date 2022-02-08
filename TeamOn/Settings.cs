@@ -10,6 +10,7 @@ namespace TeamOn
         public static string Nickname = Environment.UserName;
         public static string ServerIP = "127.0.0.1";
         public static int ServerPort = 8888;
+        public static bool PermanentChats = false;
         public static void LoadSettings()
         {
             if (!File.Exists("config.xml")) return;
@@ -33,7 +34,8 @@ namespace TeamOn
                     case "allowConnects":
                         TeamScreen.TeamScreenServer.AllowConnects = bool.Parse(vl);
                         break;
-                    default:
+                    case "permanentChats":
+                        PermanentChats = bool.Parse(vl);
                         break;
                 }
             }
@@ -48,6 +50,7 @@ namespace TeamOn
             sb.AppendLine($"<setting name=\"allowConnects\" value=\"{TeamScreen.TeamScreenServer.AllowConnects}\"/>");
             sb.AppendLine($"<setting name=\"serverIP\" value=\"{ServerIP}\"/>");
             sb.AppendLine($"<setting name=\"serverPort\" value=\"{ServerPort}\"/>");
+            sb.AppendLine($"<setting name=\"permanentChats\" value=\"{PermanentChats}\"/>");
 
             sb.AppendLine("</root>");
             File.WriteAllText("config.xml", sb.ToString());

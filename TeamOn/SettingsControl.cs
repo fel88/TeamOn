@@ -15,16 +15,19 @@ namespace TeamOn
             AddElement(serverIpLabel);
             AddElement(serverPortTextBox);
             AddElement(serverPortLabel);
+            AddElement(permanentChats);
 
             nicknameLabel.Text = "Nickname";
             serverIpLabel.Text = "Server IP";
             serverPortLabel.Text = "Server port";
 
             allowConnect.Text = "Allow remote connects";
+            permanentChats.Text = "Permanent chats";
             nickNameTextBox.Text = Settings.Nickname;
             serverIpTextBox.Text = Settings.ServerIP;
             serverPortTextBox.Text = Settings.ServerPort.ToString();
             allowConnect.Checked = TeamScreen.TeamScreenServer.AllowConnects;
+            permanentChats.Checked = Settings.PermanentChats;
 
             nickNameTextBox.TextChanged = (x) =>
             {
@@ -58,17 +61,22 @@ namespace TeamOn
                 {
                     TeamScreen.TeamScreenServer.event1.Set();
                 }
+            }; 
+            
+            permanentChats.CheckedChanged = (x) =>
+            {
+                Settings.PermanentChats = permanentChats.Checked;                
             };
         }
+
         UICheckBox allowConnect = new UICheckBox();
+        UICheckBox permanentChats = new UICheckBox();
         UITextBox nickNameTextBox = new UITextBox();
         UILabel serverIpLabel = new UILabel();
         UITextBox serverIpTextBox = new UITextBox();
         UILabel serverPortLabel = new UILabel();
         UITextBox serverPortTextBox = new UITextBox();
         UILabel nicknameLabel = new UILabel();
-
-
 
         public override Rectangle? GetRectangleOfChild(UIElement elem)
         {
@@ -100,6 +108,10 @@ namespace TeamOn
             if (elem == serverPortLabel)
             {
                 return new Rectangle(bound.X + 20, bound.Y + 140, 100, 20);
+            }
+            if (elem == permanentChats)
+            {
+                return new Rectangle(bound.X + 20, bound.Y + 180, 100, 20);
             }
             return base.GetRectangleOfChild(elem);
         }

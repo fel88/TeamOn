@@ -31,8 +31,8 @@ namespace TeamOn
                 ctx.Graphics.DrawString(item.Name, SystemFonts.DefaultFont, Brushes.Blue, 5, yy + 6);
                 if (item is OnePersonChatItem op)
                 {
-                    ctx.Graphics.FillEllipse(op.Person.Online ? Brushes.Green : Brushes.Orange, bound.Right - 20, yy + 3, 10, 10);
-                    ctx.Graphics.DrawEllipse(Pens.Black, bound.Right - 20, yy + 3, 10, 10);
+                    ctx.Graphics.FillEllipse(op.Person.Online ? Brushes.LightGreen : Brushes.Orange, bound.Right - 20, yy + chatHeight/2-5, 10, 10);
+                    ctx.Graphics.DrawEllipse(Pens.Black, bound.Right - 20, yy + chatHeight/2-5, 10, 10);
                 }
                 if (item is GroupChatItem gp)
                 {
