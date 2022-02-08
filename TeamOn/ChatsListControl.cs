@@ -61,17 +61,14 @@ namespace TeamOn
                     var rect = new Rectangle(bound.X, yy, bound.Width, chatHeight);
                     if (rect.Contains(mb.Position))
                     {
-                        ChatMessageAreaControl.CurrentChat = item;
+                        ChatMessageAreaControl.Instance.SwitchToChat(item);
                         RootElement.Instance.SwitchToChat();
                         item.NewMessagesCounter = 0;
                         break;
                     }
                     yy += chatHeight;
                 }
-
-
             }
         }
     }
-
 }

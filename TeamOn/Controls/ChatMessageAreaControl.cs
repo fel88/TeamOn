@@ -10,13 +10,17 @@ using System.Windows.Forms;
 namespace TeamOn.Controls
 {
     public class ChatMessageAreaControl : UIElement
-    {
+    {    
         private Bitmap _back;
 
-        public static ChatItem CurrentChat;
+        public static ChatMessageAreaControl Instance;
+        private ChatItem _currentChat;
+        public static ChatItem CurrentChat => Instance._currentChat;
         public static UserInfo CurrentUser;
         public ChatMessageAreaControl()
         {
+            Instance = this;
+
             var assembly = Assembly.GetExecutingAssembly();
             var resourceName = "pattern1";
 
@@ -154,6 +158,12 @@ namespace TeamOn.Controls
             //ctx.Graphics.FillRectangle(Brushes.DarkGoldenrod, bound.Value);
         }
 
+        internal void SwitchToChat(ChatItem item)
+        {
+            _currentChat = item;
+            scrollOffsetY = 0;
+        }
+
         private void CheckAndDrawTextBlock(ChatMessage c, RectangleF rect, DrawingContext ctx)
         {
             Uri outUri;
@@ -193,6 +203,8 @@ namespace TeamOn.Controls
         }
 
         int scrollOffsetY = 0;
+
+
         public override void Event(UIEvent ev)
         {
             if (ev is UIMouseWheel w)
