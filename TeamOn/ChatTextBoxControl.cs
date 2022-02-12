@@ -61,10 +61,22 @@ namespace TeamOn
                         var name = $"sended-image {dt.Year}-{dt.Month}-{dt.Day} {dt.Hour}-{dt.Minute}-{dt.Second}.jpg";
                         var path = Path.Combine("Sended", name);
                         BitmapContent.Save(path, System.Drawing.Imaging.ImageFormat.Jpeg);
-                        client.SendImage(BitmapContent, (ChatMessageAreaControl.CurrentChat as OnePersonChatItem).Person.Name, progress: (perc) =>
+                        if (ChatMessageAreaControl.CurrentChat is OnePersonChatItem op)
                         {
+                            client.SendImage(BitmapContent, op.Person.Name, progress: (perc) =>
+                            {
 
-                        });
+                            });                            
+                        }
+                        else if (ChatMessageAreaControl.CurrentChat is GroupChatItem gc)
+                        {
+                            client.SendGroupInfo(gc);
+                            client.SendImage(BitmapContent, gc.Name, progress: (perc) =>
+                            {
+
+                            });                            
+                        }
+                       
 
                         ChatMessageAreaControl.CurrentChat.AddMessage(new ImageLinkChatMessage() { Owner = ChatMessageAreaControl.CurrentUser, Path = path, DateTime = DateTime.Now });
 

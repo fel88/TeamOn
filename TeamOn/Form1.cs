@@ -19,7 +19,7 @@ namespace TeamOn
         {
             InitializeComponent();
 
-            client = new ChatClient();
+            
 
             FormClosing += Form1_FormClosing;
             pictureBox1.AllowDrop = true;
@@ -81,7 +81,8 @@ namespace TeamOn
             normalLeft = Left;
             normalTop = Top;
 
-            Settings.LoadSettings();
+            Settings.LoadSettings(); 
+            client = new ChatClient();
             ChatMessageAreaControl.CurrentUser = new UserInfo() { Name = Settings.Nickname };
             MouseWheel += Form1_MouseWheel;
             settings = new SettingsControl() { Parent = mainPanel };
@@ -114,7 +115,10 @@ namespace TeamOn
                 var nameid = item.Attribute("name").Value;
                 if (!ChatClient.Instance.Users.Any(z => z.Name == nameid))
                 {
-                    ChatClient.Instance.Users.Add(new UserInfo() { Id = uid, Name = nameid });
+                    lock (ChatClient.Instance.Users)
+                    {
+                        ChatClient.Instance.AddUser(new UserInfo() { Id = uid, Name = nameid });
+                    }
                 }
             }
 
@@ -431,7 +435,7 @@ namespace TeamOn
                 act();
         }
 
-        public void UpdateClientsList()
+        public void UpdateClientsList(UserInfo[] names)
         {
             Invoke(this, () =>
             {
@@ -439,7 +443,7 @@ namespace TeamOn
                 {
                     chat.Person.Online = false;
                 }
-                foreach (var item in ChatClient.Instance.Users)
+                foreach (var item in names)
                 {
                     if (item.Name == ChatMessageAreaControl.CurrentUser.Name) continue;
                     var fr = ChatsListControl.Chats.OfType<OnePersonChatItem>().FirstOrDefault(z => z.Person.Name == item.Name);
@@ -459,10 +463,11 @@ namespace TeamOn
                  }*/
             });
         }
+
         ChatClient client;
+
         void connect(string ipAddr, int port)
         {
-
             //client.Nickname = textBox3.Text;
             client.OnClientsListUpdate = UpdateClientsList;
             client.OnError = (msg) =>
@@ -493,20 +498,31 @@ namespace TeamOn
                             fr.AddMessage(new TextChatMessage(DateTime.Now, uri.AbsoluteUri.ToString()) { Owner = ChatClient.Instance.Users.First(z => z.Name == user) });
                         }
                     }
-                }));
-
-                /*progressBar1.Value = (int)100;
-                label4.Text = (int)100 + "%";
-                listView1.Items.Add(new ListViewItem(new string[]
+                }));                
+            }; 
+            
+            client.OnGroupFileRecieved = (group, uin, path, size) =>
             {
-                                    DateTime.Now.ToLongTimeString(),
-                                    uin,
-                                   (long)Math.Round(size/1024f) + "Kb",
-                                    "file recieved: " + path + "(size: " + size/1024 + "Kb)" +
-                                    Environment.NewLine,
-            })
-                { Tag = new FileInfo(path) });*/
+                Invoke((Action)(() =>
+                {
+                    var fr = ChatsListControl.Chats.OfType<GroupChatItem>().FirstOrDefault(z => z.Name == group);
+                    if (fr != null)
+                    {                        
+                        var fi = new FileInfo(path);
+
+                        var uri = new Uri(fi.FullName);
+                        if (uri.LocalPath.EndsWith(".jpg"))
+                        {
+                            fr.AddMessage(new ImageLinkChatMessage() { Path = uri.LocalPath.ToString(), Owner = ChatClient.Instance.Users.First(z => z.Name == uin) });
+                        }
+                        else
+                        {
+                            fr.AddMessage(new TextChatMessage(DateTime.Now, uri.AbsoluteUri.ToString()) { Owner = ChatClient.Instance.Users.First(z => z.Name == uin) });
+                        }
+                    }
+                }));                
             };
+
             client.OnFileChunkRecieved = (uin, path, chunkSize, size, perc) =>
             {
                 /*Invoke(listView1, () =>
@@ -515,19 +531,23 @@ namespace TeamOn
                     label4.Text = (int)perc + "%";
                 });*/
             };
+
             client.OnMsgRecieved = (user, str) =>
             {
                 Invoke((Action)(() =>
                 {
-                    var fr = ChatsListControl.Chats.OfType<OnePersonChatItem>().FirstOrDefault(z => z.Person.Name == user);
+                    var fr = ChatsListControl.Chats.FirstOrDefault(z => z.Name == user);
                     if (fr != null)
                     {
-                        fr.Person.Online = true;
+                        if (fr is OnePersonChatItem op)
+                        {
+                            op.Person.Online = true;
+                        }
                         fr.AddMessage(new TextChatMessage(DateTime.Now, str) { Owner = ChatClient.Instance.Users.First(z => z.Name == user) });
                     }
                 }));
-
             };
+
             client.OnGroupMsgRecieved = (user, group, str) =>
             {
                 Invoke((Action)(() =>
@@ -535,11 +555,13 @@ namespace TeamOn
                     var fr = ChatsListControl.Chats.OfType<GroupChatItem>().FirstOrDefault(z => z.Name == group);
                     if (fr != null)
                     {
-                        fr.AddMessage(new TextChatMessage(DateTime.Now, str) { Owner = ChatClient.Instance.Users.First(z => z.Name == user) });
+                        var owner = ChatClient.Instance.Users.First(z => z.Name == user);
+                        owner.Online = true;
+                        fr.AddMessage(new TextChatMessage(DateTime.Now, str) { Owner =  owner});
                     }
                 }));
-
             };
+
             client.OnTyping = (user) =>
             {
                 Invoke((Action)(() =>
@@ -556,12 +578,11 @@ namespace TeamOn
             //   toolStripSplitButton1.Enabled = false;
             client.FetchClients();
         }
-        ChatsListControl clc;
 
+        ChatsListControl clc;
 
         private void Form1_Resize(object sender, EventArgs e)
         {
-
             if (FormWindowState.Minimized == this.WindowState)
             {
                 ShowInTaskbar = false;
@@ -585,15 +606,14 @@ namespace TeamOn
 
         private void Form1_ResizeEnd(object sender, EventArgs e)
         {
-
             UIResize();
-
         }
 
         int normalWidth;
         int normalHeight;
         int normalLeft;
         int normalTop;
+
         private void PictureBox1_MouseDoubleClick(object sender, MouseEventArgs e)
         {
             if (Elements.OfType<UIButton>().Any(z =>
@@ -885,68 +905,10 @@ namespace TeamOn
             Close();
         }
     }
-
-    public abstract class ChatItem
-    {
-        public string Name;
-        public List<ChatMessage> Messages = new List<ChatMessage>();
-        public void AddMessage(ChatMessage msg)
-        {
-            Messages.Add(msg);
-            if (msg.Owner.Name != ChatMessageAreaControl.CurrentUser.Name)
-                NewMessagesCounter++;
-        }
-        public int NewMessagesCounter;
-    }
-
-    public class OnePersonChatItem : ChatItem
-    {
-        public UserInfo Person;
-        public DateTime LastTyping;
-    }
-
-    public class GroupChatItem : ChatItem
-    {
-        public List<UserInfo> Users = new List<UserInfo>();
-        public UserInfo Owner;
-    }
-
-    public abstract class ChatMessage
-    {
-        public ChatItem Parent;
-        public UserInfo Owner;
-        public DateTime DateTime;
-    }
-
-    public class TextChatMessage : ChatMessage
-    {
-        public TextChatMessage(DateTime time, string text)
-        {
-            Text = text;
-            DateTime = time;
-        }
-        public string Text;
-    }
     public class ImageChatMessage : ChatMessage
     {
         public Bitmap Thumbnail;
         public string Path;
-    }
-    public class ImageLinkChatMessage : ChatMessage
-    {
-        public string Path;
-        public Bitmap Thumbnail;
-        public void GenerateThumbnail()
-        {
-            if (Thumbnail != null) return;
-            var bmp = Bitmap.FromFile(Path);
-            var aspect = bmp.Height / (float)bmp.Width;
-            Thumbnail = new Bitmap(120, (int)(120 * aspect));
-            var gr = Graphics.FromImage(Thumbnail);
-            gr.DrawImage(bmp, new RectangleF(0, 0, Thumbnail.Width, Thumbnail.Height), new RectangleF(0, 0, bmp.Width, bmp.Height), GraphicsUnit.Pixel);
-            gr.Dispose();
-            bmp.Dispose();
-        }
     }
 
     public class UserInfo

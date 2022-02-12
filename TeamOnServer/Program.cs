@@ -274,17 +274,22 @@ namespace TeamOnServer
                         var doc = XDocument.Parse(str);
                         var w = doc.Descendants("file").First();
                         var targ = w.Attribute("target").Value;
-                        var cxstr = this.streams.First(z => (z.Tag as UserInfo).Name == targ);
-                        var wr = new StreamWriter(cxstr.Stream);
-                        //2. retranslate to specific client web request
-                        wr.WriteLine(line);
-                        wr.Flush();
+                        var grpf = Groups.FirstOrDefault(y => y.Name == targ);
+                        if (grpf != null)
+                        {                            
+                            this.SendTo(line, grpf.Users.Where(z => z.Name != uinfo.Name).Select(z => z.Name).ToArray());                            
+                        }
+                        else
+                        {
+                            var cxstr = this.streams.First(z => (z.Tag as UserInfo).Name == targ);
+                            var wr = new StreamWriter(cxstr.Stream);
+                            //2. retranslate to specific client web request
+                            wr.WriteLine(line);
+                            wr.Flush();
 
-                        //server.SendAll(line);
+                            //server.SendAll(line);
+                        }
                     }
-
-
-
                 }
                 catch (IOException iex)
                 {

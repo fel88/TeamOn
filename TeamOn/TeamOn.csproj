@@ -49,6 +49,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ChatClient.cs" />
+    <Compile Include="ChatItem.cs" />
+    <Compile Include="ChatMessage.cs" />
     <Compile Include="ChatsListControl.cs" />
     <Compile Include="ChatTextBoxControl.cs" />
     <Compile Include="CloseButton.cs" />
@@ -71,11 +73,14 @@
     </Compile>
     <Compile Include="Controls\Panel.cs" />
     <Compile Include="GroupAddMembersControl.cs" />
+    <Compile Include="GroupChatItem.cs" />
     <Compile Include="GroupEditControl.cs" />
+    <Compile Include="ImageLinkChatMessage.cs" />
     <Compile Include="MemberAddItem.cs" />
     <Compile Include="MessageFilter.cs" />
     <Compile Include="MinimizeButton.cs" />
     <Compile Include="NewGroupButton.cs" />
+    <Compile Include="OnePersonChatItem.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Controls\RowColumnPanelStyle.cs" />
@@ -95,6 +100,7 @@
     <Compile Include="TeamScreen\PingCommandProcessor.cs" />
     <Compile Include="TeamScreen\Stuff.cs" />
     <Compile Include="TeamScreen\TeamScreenServer.cs" />
+    <Compile Include="TextChatMessage.cs" />
     <Compile Include="UICheckBox.cs" />
     <Compile Include="UILabel.cs" />
     <Compile Include="Utils.cs" />

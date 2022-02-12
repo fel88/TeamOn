@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Drawing;
+using System.Text;
 
 namespace TeamOn.Controls
 {
@@ -24,16 +25,16 @@ namespace TeamOn.Controls
             {
                 return new Rectangle(bound.Right - 300, bound.Y + 10, 50, 20);
             }
-            
+
             return null;
         }
 
         public ChatHeaderControl()
         {
             connectButton = new UIButton() { Text = "connect to screen", Parent = this, HoveredBrush = Brushes.ForestGreen };
-            leaveGroup= new UIButton() { Text = "leave", Parent = this, HoveredBrush = Brushes.ForestGreen };
-            addMembers= new UIButton() { Text = "add", Parent = this, HoveredBrush = Brushes.ForestGreen };
-            editGroup= new UIButton() { Text = "edit", Parent = this, HoveredBrush = Brushes.ForestGreen };
+            leaveGroup = new UIButton() { Text = "leave", Parent = this, HoveredBrush = Brushes.ForestGreen };
+            addMembers = new UIButton() { Text = "add", Parent = this, HoveredBrush = Brushes.ForestGreen };
+            editGroup = new UIButton() { Text = "edit", Parent = this, HoveredBrush = Brushes.ForestGreen };
 
             editGroup.Click = (x) =>
             {
@@ -66,15 +67,22 @@ namespace TeamOn.Controls
             ctx.Graphics.FillRectangle(Brushes.LightSeaGreen, bound);
             if (ChatMessageAreaControl.CurrentChat != null)
             {
-                ctx.Graphics.DrawString(ChatMessageAreaControl.CurrentChat.Name, new Font("Arial", 18, FontStyle.Bold), Brushes.White, bound.X + 5, bound.Y + 5);
+                StringBuilder sb = new StringBuilder();
+                sb.Append(ChatMessageAreaControl.CurrentChat.Name);
+                if (ChatMessageAreaControl.CurrentChat is GroupChatItem gg)
+                {
+                    if (gg.Owner.Name == ChatMessageAreaControl.CurrentUser.Name)
+                        sb.Append($" (owner)");
+                }
+                ctx.Graphics.DrawString(sb.ToString(), new Font("Arial", 18, FontStyle.Bold), Brushes.White, bound.X + 5, bound.Y + 5);
                 if (ChatMessageAreaControl.CurrentChat is OnePersonChatItem op)
                 {
                     if (DateTime.Now.Subtract(op.LastTyping).TotalSeconds < 2)
                     {
-                        ctx.Graphics.DrawString("typing text ", new Font("Arial",10), Brushes.White, bound.X, bound.Bottom - 20);
+                        ctx.Graphics.DrawString("typing text ", new Font("Arial", 10), Brushes.White, bound.X, bound.Bottom - 20);
                         for (int i = 0; i < animationDotsNum; i++)
                         {
-                            ctx.Graphics.FillEllipse(Brushes.White, bound.X + 100+i*20, bound.Bottom - 15, 10, 10);
+                            ctx.Graphics.FillEllipse(Brushes.White, bound.X + 100 + i * 20, bound.Bottom - 15, 10, 10);
                         }
                         animationCounter++;
                         if (animationCounter > 10)

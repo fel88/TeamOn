@@ -11,6 +11,9 @@ namespace TeamOn
         public static string ServerIP = "127.0.0.1";
         public static int ServerPort = 8888;
         public static bool PermanentChats = false;
+
+        public static bool DebugMode;
+
         public static void LoadSettings()
         {
             if (!File.Exists("config.xml")) return;
@@ -37,10 +40,13 @@ namespace TeamOn
                     case "permanentChats":
                         PermanentChats = bool.Parse(vl);
                         break;
+                    case "debugMode":
+                        DebugMode = bool.Parse(vl);
+                        break;
                 }
             }
-
         }
+
         public static void SaveSettings()
         {
             StringBuilder sb = new StringBuilder();

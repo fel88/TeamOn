@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
@@ -17,7 +18,10 @@ namespace TeamOn
         public ChatClient()
         {
             Instance = this;
+            if (Settings.DebugMode)
+                Debugger.Launch();
         }
+
         public static ChatClient Instance;
         private NetworkStream clientStream;
 
@@ -141,6 +145,17 @@ namespace TeamOn
             th.IsBackground = true;
         }
 
+        internal void AddUser(UserInfo userInfo)
+        {
+            lock (Users)
+            {
+                if (!Users.Any(z => z.Name == userInfo.Name))
+                {
+                    Users.Add(userInfo);
+                }
+            }
+        }
+
         internal void SendMsg(string txt, string target)
         {
             var bt = Encoding.UTF8.GetBytes(txt);
@@ -197,12 +212,13 @@ namespace TeamOn
             wr.Flush();
         }
 
-        public Action OnClientsListUpdate;
+        public Action<UserInfo[]> OnClientsListUpdate;
         public Action<string, string> OnMsgRecieved;
         public Action<string, string, string> OnGroupMsgRecieved;
         public Action<string, string, string> OnGroupInfoRecieved;
         public Action<string> OnTyping;
         public Action<string, string, long> OnFileRecieved;
+        public Action<string, string, string, long> OnGroupFileRecieved;
         public Action<string, string, int, int, long> OnFileChunkRecieved;
         public Action<string> OnError;
         public int ChunkSize = 32;
@@ -243,17 +259,19 @@ namespace TeamOn
 
                                 var str = Encoding.UTF8.GetString(bs64);
                                 var doc = XDocument.Parse(str);
+
+                                //Users.Clear();
+                                List<string> names = new List<string>();
+                                foreach (var descendant in doc.Descendants("client"))
+                                {
+                                    var nm = descendant.Attribute("name").Value;
+                                    AddUser(new UserInfo() { Name = nm });
+                                    names.Add(nm);
+                                }
                                 lock (Users)
                                 {
-                                    Users.Clear();
-                                    foreach (var descendant in doc.Descendants("client"))
-                                    {
-                                        var nm = descendant.Attribute("name").Value;
-
-                                        Users.Add(new UserInfo() { Name = nm });
-                                    }
+                                    OnClientsListUpdate?.Invoke(Users.Where(z => names.Contains(z.Name)).ToArray());
                                 }
-                                OnClientsListUpdate?.Invoke();
                             }
                             if (ln.StartsWith("MSG"))
                             {
@@ -309,6 +327,7 @@ namespace TeamOn
                                 {
                                     var vnm = _user.Attribute("name").Value;
                                     gr.Users.Add(new UserInfo() { Name = vnm });
+                                    AddUser(gr.Users.Last());
                                 }
 
                                 OnGroupInfoRecieved?.Invoke(user, group, str);
@@ -345,6 +364,11 @@ namespace TeamOn
 
                                 var fl = doc.Descendants("file").First();
                                 var uin = fl.Attribute("sender").Value;
+                                string gtarget = null;
+                                if (fl.Attribute("target") != null)
+                                {
+                                    gtarget = fl.Attribute("target").Value;
+                                }
                                 var size = int.Parse(fl.Attribute("size").Value);
                                 var nm = fl.Attribute("name").Value;
                                 var chunk = fl.Descendants("chunk").First();
@@ -427,7 +451,10 @@ namespace TeamOn
 
                                 if ((int)perc == 100)
                                 {
-                                    OnFileRecieved?.Invoke(uin, path, size);
+                                    if (gtarget != null)
+                                        OnGroupFileRecieved?.Invoke(gtarget, uin, path, size);
+                                    else
+                                        OnFileRecieved?.Invoke(uin, path, size);
                                 }
                                 OnFileChunkRecieved?.Invoke(uin, path, data.Length, size, (int)perc);
 
