@@ -89,7 +89,7 @@ namespace TeamOn
             th.Start();
             th.IsBackground = true;
         }
-        public void SendFile(string s, UserInfo target, string savePath = "", Action<int> progress = null)
+        public void SendFile(string s, string target, string savePath = "", Action<int> progress = null)
         {
             Thread th = new Thread(() =>
             {
@@ -111,7 +111,7 @@ namespace TeamOn
                         sb.AppendLine("<?xml version=\"1.0\"?>");
                         sb.AppendLine("<root>");
                         sb.AppendLine(string.Format("<file sender=\"{0}\" target=\"{1}\" name=\"{2}\" size=\"{3}\" >",
-                            Nickname, target.Name, pp, fin.Length));
+                            Nickname, target, pp, fin.Length));
                         int sz = (int)Math.Min(chunkSize, fin.Length - i);
                         byte[] bb = new byte[sz];
                         fs.Read(bb, 0, sz);
@@ -361,7 +361,6 @@ namespace TeamOn
                                 var str = Encoding.UTF8.GetString(bs64);
                                 var doc = XDocument.Parse(str);
 
-
                                 var fl = doc.Descendants("file").First();
                                 var uin = fl.Attribute("sender").Value;
                                 string gtarget = null;
@@ -451,7 +450,8 @@ namespace TeamOn
 
                                 if ((int)perc == 100)
                                 {
-                                    if (gtarget != null)
+                                    //if (gtarget != null)
+                                    if (!Users.Any(z => z.Name == gtarget))
                                         OnGroupFileRecieved?.Invoke(gtarget, uin, path, size);
                                     else
                                         OnFileRecieved?.Invoke(uin, path, size);

@@ -28,7 +28,6 @@ namespace TeamOn
             };
         }
 
-        public string[] AttachedFiles;
 
         public static ChatTextBoxControl Instance;
         public override void Draw(DrawingContext ctx)
@@ -54,6 +53,39 @@ namespace TeamOn
                 if (kd.Key.KeyCode == Keys.Enter)
                 {
                     if (client == null || !client.Connected) return;
+                    if (AttachedFiles != null && AttachedFiles.Any())
+                    {
+                        Directory.CreateDirectory("Sended");
+                        var dt = DateTime.Now;
+                        foreach (var aitem in AttachedFiles)
+                        {
+                            if (ChatMessageAreaControl.CurrentChat is OnePersonChatItem op)
+                            {
+                                client.SendFile(aitem, op.Person.Name, progress: (perc) =>
+                                {
+
+                                });
+                            }
+                            else if (ChatMessageAreaControl.CurrentChat is GroupChatItem gc)
+                            {
+                                client.SendGroupInfo(gc);
+                                client.SendImage(BitmapContent, gc.Name, progress: (perc) =>
+                                {
+
+                                });
+                            }
+
+                            var fi = new FileInfo(aitem);
+                            ChatMessageAreaControl.CurrentChat.AddMessage(new TextChatMessage(dt, Path.Combine("Sended", fi.Name)) { Owner = ChatMessageAreaControl.CurrentUser, DateTime = DateTime.Now });
+
+
+                            Text = string.Empty;
+                            BitmapContent = null;
+                            AttachedFiles = new string[] { };
+                            curretPosition = 0;
+                        }
+                    }
+                    else
                     if (BitmapContent != null)
                     {
                         Directory.CreateDirectory("Sended");
@@ -66,7 +98,7 @@ namespace TeamOn
                             client.SendImage(BitmapContent, op.Person.Name, progress: (perc) =>
                             {
 
-                            });                            
+                            });
                         }
                         else if (ChatMessageAreaControl.CurrentChat is GroupChatItem gc)
                         {
@@ -74,9 +106,9 @@ namespace TeamOn
                             client.SendImage(BitmapContent, gc.Name, progress: (perc) =>
                             {
 
-                            });                            
+                            });
                         }
-                       
+
 
                         ChatMessageAreaControl.CurrentChat.AddMessage(new ImageLinkChatMessage() { Owner = ChatMessageAreaControl.CurrentUser, Path = path, DateTime = DateTime.Now });
 

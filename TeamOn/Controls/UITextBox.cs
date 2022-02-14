@@ -29,6 +29,7 @@ namespace TeamOn.Controls
         int blinkCounter = 0;
         int blinkPeriod = 40;
         public bool Focused { get; set; }
+        public string[] AttachedFiles;
 
         public int TopMargin = 3;
         public override void Draw(DrawingContext ctx)
@@ -55,7 +56,7 @@ namespace TeamOn.Controls
 
             }
             int imgShift = 0;
-            if (BitmapContent != null)
+            if (BitmapContent != null || (AttachedFiles != null && AttachedFiles.Any()))
             {
                 imgShift = bound.Height + 10;
             }
@@ -79,12 +80,7 @@ namespace TeamOn.Controls
             if (Text.Length > 0 || Focused)
             {
                 var ms = ctx.Graphics.MeasureString(Text, SystemFonts.DefaultFont);
-
-
                 ctx.Graphics.DrawString(Text, SystemFonts.DefaultFont, new SolidBrush(ForeColor), bound.X + 10 + imgShift, bound.Y + TopMargin, StringFormat.GenericTypographic);
-
-
-
             }
             else
             {
