@@ -10,7 +10,7 @@ using System.Windows.Forms;
 namespace TeamOn.Controls
 {
     public class ChatMessageAreaControl : UIElement
-    {    
+    {
         private Bitmap _back;
 
         public static ChatMessageAreaControl Instance;
@@ -57,16 +57,15 @@ namespace TeamOn.Controls
 
             foreach (var item in regions)
             {
+                //if (CurrentChat != item.Owner.Parent) continue;
                 if (item.Rect.Contains(ctx.GetCursor()))
-                {
                     ctx.SetTempCursor(Cursors.Hand);
-                }
             }
 
             int gap = 5;
             int leftGap = 50;
             int currentY = bound.Bottom - gap * 2;
-            if (ChatMessageAreaControl.CurrentChat != null)
+            if (CurrentChat != null)
             {
                 for (int i = CurrentChat.Messages.Count - 1; i >= 0; i--)
                 {
@@ -219,8 +218,10 @@ namespace TeamOn.Controls
                 {
                     foreach (var item in regions)
                     {
-                        if (item.Rect.Contains(md.Position))
+                        if (item.Rect.Contains(md.Position))                        
                         {
+                            //if (CurrentChat != item.Owner.Parent) continue;
+
                             if (item.Owner is ImageLinkChatMessage ilcm)
                             {
                                 try

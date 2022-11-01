@@ -11,6 +11,7 @@ namespace TeamOn
         public static string ServerIP = "127.0.0.1";
         public static int ServerPort = 8888;
         public static bool PermanentChats = false;
+        public static bool TopMost = false;
 
         public static bool DebugMode;
 
@@ -43,6 +44,9 @@ namespace TeamOn
                     case "debugMode":
                         DebugMode = bool.Parse(vl);
                         break;
+                    case "topMost":
+                        TopMost = bool.Parse(vl);
+                        break;
                 }
             }
         }
@@ -57,6 +61,7 @@ namespace TeamOn
             sb.AppendLine($"<setting name=\"serverIP\" value=\"{ServerIP}\"/>");
             sb.AppendLine($"<setting name=\"serverPort\" value=\"{ServerPort}\"/>");
             sb.AppendLine($"<setting name=\"permanentChats\" value=\"{PermanentChats}\"/>");
+            sb.AppendLine($"<setting name=\"topMost\" value=\"{TopMost}\"/>");
 
             sb.AppendLine("</root>");
             File.WriteAllText("config.xml", sb.ToString());

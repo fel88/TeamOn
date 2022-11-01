@@ -19,13 +19,10 @@ namespace TeamOn
         {
             InitializeComponent();
 
-            
-
             FormClosing += Form1_FormClosing;
             pictureBox1.AllowDrop = true;
-            pictureBox1.DragEnter += PictureBox1_DragEnter;
+            pictureBox1.DragEnter += PictureBox1_DragEnter;            
             pictureBox1.DragDrop += PictureBox1_DragDrop;
-
 
             bmp = new Bitmap(Screen.PrimaryScreen.Bounds.Width, Screen.PrimaryScreen.Bounds.Height);
             ctx.Graphics = Graphics.FromImage(bmp);
@@ -35,8 +32,6 @@ namespace TeamOn
             Elements.Add(new MinimizeButton(this) { AbsoluteRectPosition = true, Rect = new Rectangle(Width - headerHeight * 2 - 1, 0, headerHeight, headerHeight - 1) });
             Elements.Add(new SettingsButton(this) { AbsoluteRectPosition = true, Rect = new Rectangle(headerHeight, 0, headerHeight, headerHeight - 1) });
             Elements.Add(new NewGroupButton(this) { AbsoluteRectPosition = true, Rect = new Rectangle(headerHeight * 2, 0, headerHeight, headerHeight - 1) });
-
-            //TopMost = true;
 
             notifyIcon1.BalloonTipIcon = ToolTipIcon.Info;
             notifyIcon1.ContextMenuStrip = contextMenuStrip1;
@@ -81,7 +76,10 @@ namespace TeamOn
             normalLeft = Left;
             normalTop = Top;
 
-            Settings.LoadSettings(); 
+            Settings.LoadSettings();
+
+            TopMost = Settings.TopMost;
+
             client = new ChatClient();
             ChatMessageAreaControl.CurrentUser = new UserInfo() { Name = Settings.Nickname };
             MouseWheel += Form1_MouseWheel;
@@ -150,7 +148,7 @@ namespace TeamOn
                     {
                         var unm = uitem.Attribute("name").Value;
                         UserInfo ur = ChatClient.Instance.Users.FirstOrDefault(z => z.Name == unm);
-                        if(ur==null && unm == ChatMessageAreaControl.CurrentUser.Name)
+                        if (ur == null && unm == ChatMessageAreaControl.CurrentUser.Name)
                         {
                             ur = ChatMessageAreaControl.CurrentUser;
                         }
@@ -498,16 +496,16 @@ namespace TeamOn
                             fr.AddMessage(new TextChatMessage(DateTime.Now, uri.AbsoluteUri.ToString()) { Owner = ChatClient.Instance.Users.First(z => z.Name == user) });
                         }
                     }
-                }));                
-            }; 
-            
+                }));
+            };
+
             client.OnGroupFileRecieved = (group, uin, path, size) =>
             {
                 Invoke((Action)(() =>
                 {
                     var fr = ChatsListControl.Chats.OfType<GroupChatItem>().FirstOrDefault(z => z.Name == group);
                     if (fr != null)
-                    {                        
+                    {
                         var fi = new FileInfo(path);
 
                         var uri = new Uri(fi.FullName);
@@ -520,7 +518,7 @@ namespace TeamOn
                             fr.AddMessage(new TextChatMessage(DateTime.Now, uri.AbsoluteUri.ToString()) { Owner = ChatClient.Instance.Users.First(z => z.Name == uin) });
                         }
                     }
-                }));                
+                }));
             };
 
             client.OnFileChunkRecieved = (uin, path, chunkSize, size, perc) =>
@@ -557,7 +555,7 @@ namespace TeamOn
                     {
                         var owner = ChatClient.Instance.Users.First(z => z.Name == user);
                         owner.Online = true;
-                        fr.AddMessage(new TextChatMessage(DateTime.Now, str) { Owner =  owner});
+                        fr.AddMessage(new TextChatMessage(DateTime.Now, str) { Owner = owner });
                     }
                 }));
             };
@@ -606,7 +604,7 @@ namespace TeamOn
 
         private void Form1_ResizeEnd(object sender, EventArgs e)
         {
-            UIResize();
+            UIResize();             
         }
 
         int normalWidth;
@@ -753,6 +751,7 @@ namespace TeamOn
                 if (bd.Handled) continue;
                 item.Event(bd);
             }
+
             if (Visible && e.Y < headerHeight && !Elements[0].Rect.Contains(pos))
             {
                 captionCaptured = true;
@@ -782,7 +781,7 @@ namespace TeamOn
         int headerHeight = 20;
 
         private void timer1_Tick(object sender, EventArgs e)
-        {
+        {       
             var pos2 = ctx.GetCursor();
             ctx.SetTempCursor(Cursors.Default);
 
@@ -849,7 +848,7 @@ namespace TeamOn
 
             gr.Clear(Color.LightBlue);
 
-            gr.FillRectangle((captionCaptured || (pos2.Y > 0 && pos2.Y < headerHeight)) ? Brushes.DarkGreen : Brushes.Navy, 0, 0, Width, headerHeight);
+            gr.FillRectangle((captionCaptured || (pos2.Y > 0 && pos2.Y < headerHeight && pos2.X >= 0 && pos2.X <= Width)) ? Brushes.DarkGreen : Brushes.Navy, 0, 0, Width, headerHeight);
 
             gr.FillEllipse(client.Connected ? Brushes.LawnGreen : Brushes.Yellow, 1, 1, 15, 15);
 

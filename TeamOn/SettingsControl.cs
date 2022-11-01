@@ -16,6 +16,7 @@ namespace TeamOn
             AddElement(serverPortTextBox);
             AddElement(serverPortLabel);
             AddElement(permanentChats);
+            AddElement(topMost);
 
             nicknameLabel.Text = "Nickname";
             serverIpLabel.Text = "Server IP";
@@ -23,11 +24,13 @@ namespace TeamOn
 
             allowConnect.Text = "Allow remote connects";
             permanentChats.Text = "Permanent chats";
+            topMost.Text = "Top most window";
             nickNameTextBox.Text = Settings.Nickname;
             serverIpTextBox.Text = Settings.ServerIP;
             serverPortTextBox.Text = Settings.ServerPort.ToString();
             allowConnect.Checked = TeamScreen.TeamScreenServer.AllowConnects;
             permanentChats.Checked = Settings.PermanentChats;
+            topMost.Checked = Settings.TopMost;
 
             nickNameTextBox.TextChanged = (x) =>
             {
@@ -61,16 +64,23 @@ namespace TeamOn
                 {
                     TeamScreen.TeamScreenServer.event1.Set();
                 }
-            }; 
-            
+            };
+
             permanentChats.CheckedChanged = (x) =>
             {
-                Settings.PermanentChats = permanentChats.Checked;                
+                Settings.PermanentChats = permanentChats.Checked;
+            }; 
+            
+            topMost.CheckedChanged = (x) =>
+            {
+                Settings.TopMost = topMost.Checked;
+                Form1.ActiveForm.TopMost = Settings.TopMost;
             };
         }
 
         UICheckBox allowConnect = new UICheckBox();
         UICheckBox permanentChats = new UICheckBox();
+        UICheckBox topMost = new UICheckBox();
         UITextBox nickNameTextBox = new UITextBox();
         UILabel serverIpLabel = new UILabel();
         UITextBox serverIpTextBox = new UITextBox();
@@ -112,6 +122,10 @@ namespace TeamOn
             if (elem == permanentChats)
             {
                 return new Rectangle(bound.X + 20, bound.Y + 180, 100, 20);
+            }
+            if (elem == topMost)
+            {
+                return new Rectangle(bound.X + 20, bound.Y + 220, 100, 20);
             }
             return base.GetRectangleOfChild(elem);
         }
