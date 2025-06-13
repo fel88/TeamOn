@@ -1,146 +1,23 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{549A6C64-5559-48CB-8742-CD332C719EB8}</ProjectGuid>
+    <TargetFramework>net8.0-windows7.0</TargetFramework>
     <OutputType>WinExe</OutputType>
-    <RootNamespace>TeamOn</RootNamespace>
-    <AssemblyName>TeamOn</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <Deterministic>true</Deterministic>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImportWindowsDesktopTargets>true</ImportWindowsDesktopTargets>
   </PropertyGroup>
   <PropertyGroup>
     <ApplicationIcon>smiley-mr-green.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Deployment" />
-    <Reference Include="System.Drawing" />
-    <Reference Include="System.Net.Http" />
-    <Reference Include="System.Windows.Forms" />
-    <Reference Include="System.Xml" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="ChatClient.cs" />
-    <Compile Include="ChatItem.cs" />
-    <Compile Include="ChatMessage.cs" />
-    <Compile Include="ChatsListControl.cs" />
-    <Compile Include="ChatTextBoxControl.cs" />
-    <Compile Include="CloseButton.cs" />
-    <Compile Include="Controls\Button.cs" />
-    <Compile Include="Controls\ChatControl.cs" />
-    <Compile Include="Controls\ChatHeaderControl.cs" />
-    <Compile Include="Controls\ChatMessageAreaControl.cs" />
-    <Compile Include="Controls\IFocusContainer.cs" />
-    <Compile Include="Controls\RootElement.cs" />
-    <Compile Include="Controls\UIEvent.cs" />
-    <Compile Include="Controls\UIMouseButtonDown.cs" />
-    <Compile Include="Controls\UIMouseButtonEvent.cs" />
-    <Compile Include="Controls\UIMouseButtonUp.cs" />
-    <Compile Include="DrawingContext.cs" />
-    <Compile Include="Form1.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Form1.Designer.cs">
-      <DependentUpon>Form1.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Controls\Panel.cs" />
-    <Compile Include="GroupAddMembersControl.cs" />
-    <Compile Include="GroupChatItem.cs" />
-    <Compile Include="GroupEditControl.cs" />
-    <Compile Include="ImageLinkChatMessage.cs" />
-    <Compile Include="MemberAddItem.cs" />
-    <Compile Include="MessageFilter.cs" />
-    <Compile Include="MinimizeButton.cs" />
-    <Compile Include="NewGroupButton.cs" />
-    <Compile Include="OnePersonChatItem.cs" />
-    <Compile Include="Program.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Controls\RowColumnPanelStyle.cs" />
-    <Compile Include="Controls\RowsPanel.cs" />
-    <Compile Include="Controls\TwoColumnPanel.cs" />
-    <Compile Include="Controls\UIElement.cs" />
-    <Compile Include="Settings.cs" />
-    <Compile Include="SettingsButton.cs" />
-    <Compile Include="Controls\UITextBox.cs" />
-    <Compile Include="SettingsControl.cs" />
-    <Compile Include="TeamScreen\ChunkCommandProcessor.cs" />
-    <Compile Include="TeamScreen\ClientObject.cs" />
-    <Compile Include="TeamScreen\CommandContext.cs" />
-    <Compile Include="TeamScreen\CommandProcessor.cs" />
-    <Compile Include="TeamScreen\FrameCommandProcessor.cs" />
-    <Compile Include="TeamScreen\ImgEndCommandProcessor.cs" />
-    <Compile Include="TeamScreen\PingCommandProcessor.cs" />
-    <Compile Include="TeamScreen\Stuff.cs" />
-    <Compile Include="TeamScreen\TeamScreenServer.cs" />
-    <Compile Include="TextChatMessage.cs" />
-    <Compile Include="UICheckBox.cs" />
-    <Compile Include="UILabel.cs" />
-    <Compile Include="Utils.cs" />
-    <EmbeddedResource Include="Form1.resx">
-      <DependentUpon>Form1.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Properties\Resources.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
-    <Compile Include="Properties\Resources.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Resources.resx</DependentUpon>
-      <DesignTime>True</DesignTime>
-    </Compile>
-    <None Include="Properties\Settings.settings">
-      <Generator>SettingsSingleFileGenerator</Generator>
-      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
-    </None>
-    <Compile Include="Properties\Settings.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Settings.settings</DependentUpon>
-      <DesignTimeSharedInput>True</DesignTimeSharedInput>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="App.config" />
-  </ItemGroup>
-  <ItemGroup>
     <EmbeddedResource Include="Images\pattern1.png" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="config.xml" />
-    <None Include="Resources\pencil.ico" />
-    <None Include="Resources\plus-octagon.ico" />
-    <None Include="Resources\gear.ico" />
-    <None Include="Resources\smiley-mr-green.ico" />
-    <None Include="Resources\smiley-evil.png" />
     <EmbeddedResource Include="smiley-mr-green.ico" />
   </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
+    <PackageReference Include="System.Data.DataSetExtensions" Version="4.5.0" />
+  </ItemGroup>
 </Project>
